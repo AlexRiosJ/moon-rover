@@ -7,8 +7,10 @@ To make it works execute the following commands:
 ``` shell
 > mkdir build
 > cd build
-> cmake -G "MinGW Makefiles" ..
-> make
+\build> cmake -G "MinGW Makefiles" ..
+\build> make
 > cd ..
-> .\\build\\main.exe
+> .\build\main.exe
+
+> cd build && make && cd .. && build\main.exe
 ```
