@@ -3,12 +3,6 @@
 
 #include <GL/glew.h>
 
-typedef enum
-{
-    false,
-    true
-} bool;
-
 typedef struct Vertex
 {
     float x;
