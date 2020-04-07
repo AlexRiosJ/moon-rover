@@ -2,6 +2,7 @@
 #include <GL/freeglut.h>
 #include "utils.h"
 #include "transforms.h"
+#include "perlin.h"
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
@@ -12,8 +13,8 @@
 #define RESET 0xFFFF
 #define NUM_VERTEX_X 256
 #define NUM_VERTEX_Z 256
-#define SIDE_LENGTH_X 200
-#define SIDE_LENGTH_Z 200
+#define SIDE_LENGTH_X 40
+#define SIDE_LENGTH_Z 40
 
 static GLuint programId, va[1], bufferId[2], vertexPosLoc, vertexColLoc, modelMatrixLoc, viewMatrixLoc, projMatrixLoc;
 static Mat4 projMatrix;
@@ -31,7 +32,7 @@ Motion motion = NONE;
 static float cameraX = 0;
 static float cameraZ = 0;
 static float cameraAngle = 0;
-static float cameraSpeed = 0.2;
+static float cameraSpeed = 0.05;
 static float rotationSpeed = 2;
 
 static void initShaders()
@@ -75,7 +76,7 @@ static void generateTerrain()
 		for (int j = 0; j < NUM_VERTEX_X; j++)
 		{
 			vertexes[i * NUM_VERTEX_X + j].x = x;
-			vertexes[i * NUM_VERTEX_X + j].y = (float)rand() / RAND_MAX * 2;
+			vertexes[i * NUM_VERTEX_X + j].y = Perlin_Get2d(x, z, 0.25, 15);
 			vertexes[i * NUM_VERTEX_X + j].z = z;
 			x += dx;
 		}
@@ -166,14 +167,14 @@ static void display()
 		rotateRight();
 	}
 	rotateY(&viewMat, -cameraAngle);
-	translate(&viewMat, -cameraX, -3, -cameraZ);
+	translate(&viewMat, -cameraX, -1, -cameraZ);
 
 	glUniformMatrix4fv(viewMatrixLoc, 1, GL_TRUE, viewMat.values);
 	glUniformMatrix4fv(modelMatrixLoc, 1, GL_TRUE, modelMat.values);
 
 	glBindVertexArray(va[0]);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferId[1]);
-	glDrawElements(GL_LINE_STRIP, (NUM_VERTEX_X - 1) * (NUM_VERTEX_Z * 2 + 1), GL_UNSIGNED_SHORT, 0);
+	glDrawElements(GL_TRIANGLE_STRIP, (NUM_VERTEX_X - 1) * (NUM_VERTEX_Z * 2 + 1), GL_UNSIGNED_SHORT, 0);
 	glutSwapBuffers();
 }
 
@@ -189,7 +190,7 @@ static void reshapeFunc(int w, int h)
 	float aspect = (float)w / h;
 	if (usePerspective)
 	{
-		setPerspective(&projMatrix, 80, aspect, -1, -2000);
+		setPerspective(&projMatrix, 80, aspect, -0.1, -2000);
 	}
 	else
 	{
