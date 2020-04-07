@@ -166,7 +166,7 @@ static void display()
 		rotateRight();
 	}
 	rotateY(&viewMat, -cameraAngle);
-	translate(&viewMat, -cameraX, -5, -cameraZ);
+	translate(&viewMat, -cameraX, -3, -cameraZ);
 
 	glUniformMatrix4fv(viewMatrixLoc, 1, GL_TRUE, viewMat.values);
 	glUniformMatrix4fv(modelMatrixLoc, 1, GL_TRUE, modelMat.values);
