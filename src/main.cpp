@@ -10,9 +10,9 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#define RESET 0xFFFF
-#define NUM_VERTEX_X 256
-#define NUM_VERTEX_Z 256
+#define RESET 0xFFFFFFFF
+#define NUM_VERTEX_X 512
+#define NUM_VERTEX_Z 512
 #define SIDE_LENGTH_X 40
 #define SIDE_LENGTH_Z 40
 
@@ -62,8 +62,8 @@ static void initShaders()
 
 static void generateTerrain()
 {
-	Vertex vertexes[NUM_VERTEX_X * NUM_VERTEX_Z];
-	GLushort indexBuffer[(NUM_VERTEX_X - 1) * (NUM_VERTEX_Z * 2 + 1)];
+	Vertex *vertexes = new Vertex[NUM_VERTEX_X * NUM_VERTEX_Z];
+	GLuint *indexBuffer = new GLuint[(NUM_VERTEX_X - 1) * (NUM_VERTEX_Z * 2 + 1)];
 	// printf("%d\n", (NUM_VERTEX_X - 1) * (NUM_VERTEX_Z * 2 + 1));
 	float x = -SIDE_LENGTH_X / 2.0;
 	float z = -SIDE_LENGTH_Z / 2.0;
@@ -109,12 +109,12 @@ static void generateTerrain()
 	glGenBuffers(2, bufferId);
 
 	glBindBuffer(GL_ARRAY_BUFFER, bufferId[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertexes), vertexes, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * NUM_VERTEX_X * NUM_VERTEX_Z, vertexes, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(vertexPosLoc);
 	glVertexAttribPointer(vertexPosLoc, 3, GL_FLOAT, 0, 0, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, bufferId[1]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(indexBuffer), indexBuffer, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLuint) * (NUM_VERTEX_X - 1) * (NUM_VERTEX_Z * 2 + 1), indexBuffer, GL_STATIC_DRAW);
 	glPrimitiveRestartIndex(RESET);
 	glEnable(GL_PRIMITIVE_RESTART);
 }
@@ -174,7 +174,7 @@ static void display()
 
 	glBindVertexArray(va[0]);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferId[1]);
-	glDrawElements(GL_TRIANGLE_STRIP, (NUM_VERTEX_X - 1) * (NUM_VERTEX_Z * 2 + 1), GL_UNSIGNED_SHORT, 0);
+	glDrawElements(GL_TRIANGLE_STRIP, (NUM_VERTEX_X - 1) * (NUM_VERTEX_Z * 2 + 1), GL_UNSIGNED_INT, 0);
 	glutSwapBuffers();
 }
 
