@@ -9,6 +9,7 @@
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
+#define toRadians(deg) deg *M_PI / 180.0
 
 #define RESET 0xFFFFFFFF
 #define NUM_VERTEX_X 512
@@ -16,24 +17,16 @@
 #define SIDE_LENGTH_X 40
 #define SIDE_LENGTH_Z 40
 
+unsigned char keys[256];
+static float movex = 0, movey = 0;
+
 static GLuint programId, va[1], bufferId[2], vertexPosLoc, vertexColLoc, modelMatrixLoc, viewMatrixLoc, projMatrixLoc;
 static Mat4 projMatrix;
 static GLboolean usePerspective = GL_TRUE;
 static float angleY = 0, angleZ = 0;
-typedef enum
-{
-	NONE,
-	FORWARD,
-	BACKWARD,
-	LEFT,
-	RIGHT
-} Motion;
-Motion motion = NONE;
-static float cameraX = 0;
-static float cameraZ = 0;
-static float cameraAngle = 0;
-static float cameraSpeed = 0.05;
-static float rotationSpeed = 2;
+
+Vertex cameraPosition = {0, 5, 0};
+float cameraSpeed = 0.05;
 
 static void initShaders()
 {
@@ -119,28 +112,39 @@ static void generateTerrain()
 	glEnable(GL_PRIMITIVE_RESTART);
 }
 
-static void moveForward()
+static void move()
 {
-	float radians = M_PI * cameraAngle / 180;
-	cameraX -= cameraSpeed * sin(radians);
-	cameraZ -= cameraSpeed * cos(radians);
-}
+	cameraSpeed = keys[112] ? 0.1 : 0.05;
 
-static void moveBackward()
-{
-	float radians = M_PI * cameraAngle / 180;
-	cameraX += cameraSpeed * sin(radians);
-	cameraZ += cameraSpeed * cos(radians);
-}
+	float nextForwardXPosition = cameraSpeed * -sin(toRadians(movex * 0.08));
+	float nextForwardYPosition = cameraSpeed * sin(toRadians(movey * 0.08));
+	float nextForwardZPosition = cameraSpeed * cos(toRadians(movex * 0.08));
 
-static void rotateLeft()
-{
-	cameraAngle += rotationSpeed;
-}
+	float nextSideXPosition = cameraSpeed * -cos(toRadians(movex * 0.08));
+	float nextSideZPosition = cameraSpeed * -sin(toRadians(movex * 0.08));
 
-static void rotateRight()
-{
-	cameraAngle -= rotationSpeed;
+	if (keys['w'])
+	{
+		cameraPosition.x -= nextForwardXPosition;
+		cameraPosition.y -= nextForwardYPosition;
+		cameraPosition.z -= nextForwardZPosition;
+	}
+	if (keys['s'])
+	{
+		cameraPosition.x += nextForwardXPosition;
+		cameraPosition.y += nextForwardYPosition;
+		cameraPosition.z += nextForwardZPosition;
+	}
+	if (keys['a'])
+	{
+		cameraPosition.x += nextSideXPosition;
+		cameraPosition.z += nextSideZPosition;
+	}
+	if (keys['d'])
+	{
+		cameraPosition.x -= nextSideXPosition;
+		cameraPosition.z -= nextSideZPosition;
+	}
 }
 
 static void display()
@@ -152,22 +156,11 @@ static void display()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(programId);
 
-	switch (motion)
-	{
-	case FORWARD:
-		moveForward();
-		break;
-	case BACKWARD:
-		moveBackward();
-		break;
-	case LEFT:
-		rotateLeft();
-		break;
-	case RIGHT:
-		rotateRight();
-	}
-	rotateY(&viewMat, -cameraAngle);
-	translate(&viewMat, -cameraX, -1, -cameraZ);
+	move();
+
+	rotateX(&viewMat, movey * 0.08);
+	rotateY(&viewMat, movex * 0.08);
+	translate(&viewMat, -cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
 
 	glUniformMatrix4fv(viewMatrixLoc, 1, GL_TRUE, viewMat.values);
 	glUniformMatrix4fv(modelMatrixLoc, 1, GL_TRUE, modelMat.values);
@@ -218,27 +211,39 @@ static void exitFunc(unsigned char key, int x, int y)
 	}
 }
 
-static void specialKeyPressed(int code, int x, int y)
+static void specialKeyPressed(int key, int x, int y)
 {
-	switch (code)
-	{
-	case 101:
-		motion = FORWARD;
-		break;
-	case 103:
-		motion = BACKWARD;
-		break;
-	case 100:
-		motion = LEFT;
-		break;
-	case 102:
-		motion = RIGHT;
-	}
+	keys[key] = 1;
 }
 
-static void specialKeyReleased(int code, int x, int y)
+static void specialKeyReleased(int key, int x, int y)
 {
-	motion = NONE;
+	keys[key] = 0;
+}
+
+static void keyPressed(unsigned char key, int x, int y)
+{
+	if (key == 27)
+		exit(0);
+	else
+		keys[key] = 1;
+}
+
+static void keyReleased(unsigned char key, int x, int y)
+{
+	keys[key] = 0;
+}
+
+void rotateCamera(int x, int y)
+{
+	movex += (float)(x - glutGet(GLUT_WINDOW_WIDTH) / 2);
+	movey += (float)(y - glutGet(GLUT_WINDOW_HEIGHT) / 2);
+	glutWarpPointer(glutGet(GLUT_WINDOW_WIDTH) / 2, glutGet(GLUT_WINDOW_HEIGHT) / 2);
+}
+
+static void mouseMove(int x, int y)
+{
+	rotateCamera(x, y);
 }
 
 int main(int argc, char **argv)
@@ -251,10 +256,15 @@ int main(int argc, char **argv)
 	glutTimerFunc(50, timerFunc, 1);
 
 	glutCreateWindow("Moon Rover");
+	glutFullScreen();
+	glutSetCursor(GLUT_CURSOR_CROSSHAIR);
+	glutPassiveMotionFunc(mouseMove);
+	glutMotionFunc(mouseMove);
 	glutDisplayFunc(display);
-	glutKeyboardFunc(exitFunc);
 	glutSpecialFunc(specialKeyPressed);
 	glutSpecialUpFunc(specialKeyReleased);
+	glutKeyboardFunc(keyPressed);
+	glutKeyboardUpFunc(keyReleased);
 	glutReshapeFunc(reshapeFunc);
 	glewInit();
 	initShaders();
