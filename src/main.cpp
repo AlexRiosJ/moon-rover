@@ -18,15 +18,23 @@
 #define SIDE_LENGTH_Z 40
 
 unsigned char keys[256];
+
+static GLuint programId, va[1], bufferId[4], vertexPosLoc, vertexColLoc, vertexNormalLoc, modelMatrixLoc, viewMatrixLoc, projMatrixLoc;
+static Mat4 modelMatrix, viewMatrix, projectionMatrix;
+
 static float movex = 0, movey = 0;
-
-static GLuint programId, va[1], bufferId[2], vertexPosLoc, vertexColLoc, modelMatrixLoc, viewMatrixLoc, projMatrixLoc;
-static Mat4 projMatrix;
-static GLboolean usePerspective = GL_TRUE;
-static float angleY = 0, angleZ = 0;
-
 Vertex cameraPosition = {0, 5, 0};
 float cameraSpeed = 0.05;
+
+static GLuint ambientLightLoc, diffuseLightLoc, lightPositionLoc, materialALoc, materialDLoc, materialSLoc, exponentLoc, cameraLoc;
+
+static float ambientLight[] = {0, 0, 0};
+static float materialA[] = {0.5, 0.5, 0.5};
+static float diffuseLight[] = {1, 1, 1};
+static float lightPosition[] = {0, 100, 0};
+static float materialD[] = {1, 1, 1};
+static float materialS[] = {1, 1, 1};
+static float exponent = 0xFFFFFFFF;
 
 static void initShaders()
 {
@@ -41,13 +49,32 @@ static void initShaders()
 	glAttachShader(programId, vShader);
 	glAttachShader(programId, fShader);
 	glLinkProgram(programId);
+	glUseProgram(programId);
+
 	vertexPosLoc = glGetAttribLocation(programId, "vertexPosition");
 	vertexColLoc = glGetAttribLocation(programId, "vertexColor");
+	vertexNormalLoc = glGetAttribLocation(programId, "vertexNormal");
 	modelMatrixLoc = glGetUniformLocation(programId, "modelMatrix");
 	viewMatrixLoc = glGetUniformLocation(programId, "viewMatrix");
-	projMatrixLoc = glGetUniformLocation(programId, "projMatrix");
+	projMatrixLoc = glGetUniformLocation(programId, "projectionMatrix");
 
-	glUseProgram(programId);
+	ambientLightLoc = glGetUniformLocation(programId, "ambientLight");
+	diffuseLightLoc = glGetUniformLocation(programId, "diffuseLight");
+	lightPositionLoc = glGetUniformLocation(programId, "lightPosition");
+	materialALoc = glGetUniformLocation(programId, "materialA");
+	materialDLoc = glGetUniformLocation(programId, "materialD");
+	materialSLoc = glGetUniformLocation(programId, "materialS");
+	exponentLoc = glGetUniformLocation(programId, "exponent");
+	cameraLoc = glGetUniformLocation(programId, "camera");
+
+	glUniform3fv(ambientLightLoc, 1, ambientLight);
+	glUniform3fv(diffuseLightLoc, 1, diffuseLight);
+	glUniform3fv(lightPositionLoc, 1, lightPosition);
+	glUniform3fv(materialALoc, 1, materialA);
+	glUniform3fv(materialDLoc, 1, materialD);
+	glUniform3fv(materialSLoc, 1, materialS);
+	glUniform1f(exponentLoc, exponent);
+
 	glEnable(GL_DEPTH_TEST);
 	//	glEnable(GL_CULL_FACE);
 	//	glFrontFace(GL_CW);
@@ -56,6 +83,8 @@ static void initShaders()
 static void generateTerrain()
 {
 	Vertex *vertexes = new Vertex[NUM_VERTEX_X * NUM_VERTEX_Z];
+	Vertex *colors = new Vertex[NUM_VERTEX_X * NUM_VERTEX_Z];
+	Vertex *normals = new Vertex[NUM_VERTEX_X * NUM_VERTEX_Z];
 	GLuint *indexBuffer = new GLuint[(NUM_VERTEX_X - 1) * (NUM_VERTEX_Z * 2 + 1)];
 	// printf("%d\n", (NUM_VERTEX_X - 1) * (NUM_VERTEX_Z * 2 + 1));
 	float x = -SIDE_LENGTH_X / 2.0;
@@ -68,9 +97,14 @@ static void generateTerrain()
 	{
 		for (int j = 0; j < NUM_VERTEX_X; j++)
 		{
-			vertexes[i * NUM_VERTEX_X + j].x = x;
-			vertexes[i * NUM_VERTEX_X + j].y = Perlin_Get2d(x, z, 0.25, 15);
-			vertexes[i * NUM_VERTEX_X + j].z = z;
+			normals[i * NUM_VERTEX_X + j].x = vertexes[i * NUM_VERTEX_X + j].x = x;
+			normals[i * NUM_VERTEX_X + j].y = vertexes[i * NUM_VERTEX_X + j].y = Perlin_Get2d(x, z, 0.25, 15);
+			normals[i * NUM_VERTEX_X + j].z = vertexes[i * NUM_VERTEX_X + j].z = z;
+
+			colors[i * NUM_VERTEX_X + j].x = 1;
+			colors[i * NUM_VERTEX_X + j].y = 1;
+			colors[i * NUM_VERTEX_X + j].z = 1;
+
 			x += dx;
 		}
 		x = -SIDE_LENGTH_X / 2.0;
@@ -99,7 +133,7 @@ static void generateTerrain()
 
 	glGenVertexArrays(1, va);
 	glBindVertexArray(va[0]);
-	glGenBuffers(2, bufferId);
+	glGenBuffers(4, bufferId);
 
 	glBindBuffer(GL_ARRAY_BUFFER, bufferId[0]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * NUM_VERTEX_X * NUM_VERTEX_Z, vertexes, GL_STATIC_DRAW);
@@ -107,6 +141,16 @@ static void generateTerrain()
 	glVertexAttribPointer(vertexPosLoc, 3, GL_FLOAT, 0, 0, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, bufferId[1]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * NUM_VERTEX_X * NUM_VERTEX_Z, colors, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(vertexColLoc);
+	glVertexAttribPointer(vertexColLoc, 3, GL_FLOAT, 0, 0, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, bufferId[2]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * NUM_VERTEX_X * NUM_VERTEX_Z, normals, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(vertexNormalLoc);
+	glVertexAttribPointer(vertexNormalLoc, 3, GL_FLOAT, 0, 0, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, bufferId[3]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(GLuint) * (NUM_VERTEX_X - 1) * (NUM_VERTEX_Z * 2 + 1), indexBuffer, GL_STATIC_DRAW);
 	glPrimitiveRestartIndex(RESET);
 	glEnable(GL_PRIMITIVE_RESTART);
@@ -114,7 +158,7 @@ static void generateTerrain()
 
 static void move()
 {
-	cameraSpeed = keys[112] ? 0.1 : 0.05;
+	cameraSpeed = keys[32] ? 0.1 : 0.05; // If space bar is pressed duplicate speed
 
 	float nextForwardXPosition = cameraSpeed * -sin(toRadians(movex * 0.08));
 	float nextForwardYPosition = cameraSpeed * sin(toRadians(movey * 0.08));
@@ -149,25 +193,24 @@ static void move()
 
 static void display()
 {
-	Mat4 modelMat;
-	Mat4 viewMat;
-	mIdentity(&modelMat);
-	mIdentity(&viewMat);
+	mIdentity(&modelMatrix);
+	mIdentity(&viewMatrix);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(programId);
 
 	move();
+	glUniform3f(cameraLoc, cameraPosition.x, cameraPosition.y, cameraPosition.z);
 
-	rotateX(&viewMat, movey * 0.08);
-	rotateY(&viewMat, movex * 0.08);
-	translate(&viewMat, -cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
+	rotateX(&viewMatrix, movey * 0.08);
+	rotateY(&viewMatrix, movex * 0.08);
+	translate(&viewMatrix, -cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
+	glUniformMatrix4fv(viewMatrixLoc, 1, GL_TRUE, viewMatrix.values);
 
-	glUniformMatrix4fv(viewMatrixLoc, 1, GL_TRUE, viewMat.values);
-	glUniformMatrix4fv(modelMatrixLoc, 1, GL_TRUE, modelMat.values);
-
+	glUniformMatrix4fv(modelMatrixLoc, 1, GL_TRUE, modelMatrix.values);
 	glBindVertexArray(va[0]);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferId[1]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferId[3]);
 	glDrawElements(GL_TRIANGLE_STRIP, (NUM_VERTEX_X - 1) * (NUM_VERTEX_Z * 2 + 1), GL_UNSIGNED_INT, 0);
+
 	glutSwapBuffers();
 }
 
@@ -181,18 +224,8 @@ static void reshapeFunc(int w, int h)
 {
 	glViewport(0, 0, w, h);
 	float aspect = (float)w / h;
-	if (usePerspective)
-	{
-		setPerspective(&projMatrix, 80, aspect, -0.1, -2000);
-	}
-	else
-	{
-		if (aspect >= 1.0)
-			setOrtho(&projMatrix, -6 * aspect, 6 * aspect, -6, 6, -6, 6);
-		else
-			setOrtho(&projMatrix, -6, 6, -6 / aspect, 6 / aspect, -6, 6);
-	}
-	glUniformMatrix4fv(projMatrixLoc, 1, GL_TRUE, projMatrix.values);
+	setPerspective(&projectionMatrix, 70, aspect, -0.1, -2000);
+	glUniformMatrix4fv(projMatrixLoc, 1, GL_TRUE, projectionMatrix.values);
 }
 
 static void exitFunc(unsigned char key, int x, int y)
@@ -202,23 +235,6 @@ static void exitFunc(unsigned char key, int x, int y)
 		glDeleteVertexArrays(1, va);
 		exit(0);
 	}
-	if (key == 13)
-	{
-		usePerspective = !usePerspective;
-		int w = glutGet(GLUT_WINDOW_WIDTH);
-		int h = glutGet(GLUT_WINDOW_HEIGHT);
-		reshapeFunc(w, h);
-	}
-}
-
-static void specialKeyPressed(int key, int x, int y)
-{
-	keys[key] = 1;
-}
-
-static void specialKeyReleased(int key, int x, int y)
-{
-	keys[key] = 0;
 }
 
 static void keyPressed(unsigned char key, int x, int y)
@@ -261,8 +277,6 @@ int main(int argc, char **argv)
 	glutPassiveMotionFunc(mouseMove);
 	glutMotionFunc(mouseMove);
 	glutDisplayFunc(display);
-	glutSpecialFunc(specialKeyPressed);
-	glutSpecialUpFunc(specialKeyReleased);
 	glutKeyboardFunc(keyPressed);
 	glutKeyboardUpFunc(keyReleased);
 	glutReshapeFunc(reshapeFunc);
