@@ -30,11 +30,11 @@ static GLuint ambientLightLoc, diffuseLightLoc, lightPositionLoc, materialALoc, 
 
 static float ambientLight[] = {0, 0, 0};
 static float materialA[] = {0.5, 0.5, 0.5};
-static float diffuseLight[] = {1, 1, 1};
-static float lightPosition[] = {0, 100, 0};
-static float materialD[] = {1, 1, 1};
-static float materialS[] = {1, 1, 1};
-static float exponent = 0xFFFFFFFF;
+static float diffuseLight[] = {1.0, 0.937, 0.8};
+static float lightPosition[] = {0, 10, 0};
+static float materialD[] = {0.5, 0.5, 0.5};
+static float materialS[] = {0.5, 0.5, 0.5};
+static float exponent = 16;
 
 static void initShaders()
 {
@@ -97,9 +97,13 @@ static void generateTerrain()
 	{
 		for (int j = 0; j < NUM_VERTEX_X; j++)
 		{
-			normals[i * NUM_VERTEX_X + j].x = vertexes[i * NUM_VERTEX_X + j].x = x;
-			normals[i * NUM_VERTEX_X + j].y = vertexes[i * NUM_VERTEX_X + j].y = Perlin_Get2d(x, z, 0.25, 15);
-			normals[i * NUM_VERTEX_X + j].z = vertexes[i * NUM_VERTEX_X + j].z = z;
+			vertexes[i * NUM_VERTEX_X + j].x = x;
+			vertexes[i * NUM_VERTEX_X + j].y = Perlin_Get2d(x, z, 0.25, 15);
+			vertexes[i * NUM_VERTEX_X + j].z = z;
+
+			normals[i * NUM_VERTEX_X + j].x = 0;
+			normals[i * NUM_VERTEX_X + j].y = 1;
+			normals[i * NUM_VERTEX_X + j].z = 0;
 
 			colors[i * NUM_VERTEX_X + j].x = 1;
 			colors[i * NUM_VERTEX_X + j].y = 1;
