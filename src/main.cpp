@@ -30,7 +30,7 @@ static GLuint ambientLightLoc, diffuseLightLoc, lightPositionLoc, materialALoc, 
 
 static float ambientLight[] = {0, 0, 0};
 static float materialA[] = {0.5, 0.5, 0.5};
-static float diffuseLight[] = {1.0, 0.937, 0.8};
+static float diffuseLight[] = {1.0, 1.0, 1.0};
 static float lightPosition[] = {0, 10, 0};
 static float materialD[] = {0.5, 0.5, 0.5};
 static float materialS[] = {0.5, 0.5, 0.5};
@@ -98,12 +98,8 @@ static void generateTerrain()
 		for (int j = 0; j < NUM_VERTEX_X; j++)
 		{
 			vertexes[i * NUM_VERTEX_X + j].x = x;
-			vertexes[i * NUM_VERTEX_X + j].y = Perlin_Get2d(x, z, 0.25, 15);
+			vertexes[i * NUM_VERTEX_X + j].y = Perlin_Get2d(x, z, 0.2, 10);
 			vertexes[i * NUM_VERTEX_X + j].z = z;
-
-			normals[i * NUM_VERTEX_X + j].x = 0;
-			normals[i * NUM_VERTEX_X + j].y = 1;
-			normals[i * NUM_VERTEX_X + j].z = 0;
 
 			colors[i * NUM_VERTEX_X + j].x = 1;
 			colors[i * NUM_VERTEX_X + j].y = 1;
@@ -133,6 +129,41 @@ static void generateTerrain()
 				// printf("%d, %d\n", index, j % 2 == 0 ? num : num + NUM_VERTEX_Z);
 			}
 		}
+	}
+
+	for (int i = 0; i < NUM_VERTEX_X * NUM_VERTEX_Z; i++)
+	{
+		normals[i] = {0, 0, 0};
+	}
+
+	int index = 0;
+	for (int i = 0; i < (NUM_VERTEX_Z - 1); i++)
+	{
+		for (int j = 0; j < (NUM_VERTEX_X - 1) * 2; j++)
+		{
+			Vertex A = subtractVertex(vertexes[indexBuffer[index + j]], vertexes[indexBuffer[index + j + 1]]);
+			Vertex B = subtractVertex(vertexes[indexBuffer[index + j]], vertexes[indexBuffer[index + j + 2]]);
+			Vertex C = crossProduct(A, B);
+			if (j % 2 != 0)
+			{
+				C.x *= -1;
+				C.y *= -1;
+				C.z *= -1;
+			}
+
+			normals[indexBuffer[index + j]].x += C.x;
+			normals[indexBuffer[index + j]].y += C.y;
+			normals[indexBuffer[index + j]].z += C.z;
+
+			normals[indexBuffer[index + j + 1]].x += C.x;
+			normals[indexBuffer[index + j + 1]].y += C.y;
+			normals[indexBuffer[index + j + 1]].z += C.z;
+
+			normals[indexBuffer[index + j + 2]].x += C.x;
+			normals[indexBuffer[index + j + 2]].y += C.y;
+			normals[indexBuffer[index + j + 2]].z += C.z;
+		}
+		index += (NUM_VERTEX_X * 2 + 1);
 	}
 
 	glGenVertexArrays(1, va);
