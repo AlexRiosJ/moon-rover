@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "transforms.h"
 #include "perlin.h"
+#include "sphere.h"
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
@@ -14,8 +15,10 @@
 #define RESET 0xFFFFFFFF
 #define NUM_VERTEX_X 512
 #define NUM_VERTEX_Z 512
-#define SIDE_LENGTH_X 40
-#define SIDE_LENGTH_Z 40
+#define SIDE_LENGTH_X 20
+#define SIDE_LENGTH_Z 20
+
+Sphere earth;
 
 unsigned char keys[256];
 
@@ -23,7 +26,7 @@ static GLuint programId, va[1], bufferId[4], vertexPosLoc, vertexColLoc, vertexN
 static Mat4 modelMatrix, viewMatrix, projectionMatrix;
 
 static float movex = 0, movey = 0;
-Vertex cameraPosition = {0, 5, 0};
+Vertex cameraPosition = {0, 1.5, 0};
 float cameraSpeed = 0.05;
 
 static GLuint ambientLightLoc, diffuseLightLoc, lightPositionLoc, materialALoc, materialDLoc, materialSLoc, exponentLoc, cameraLoc;
@@ -32,9 +35,9 @@ static float ambientLight[] = {0, 0, 0};
 static float materialA[] = {0.5, 0.5, 0.5};
 static float diffuseLight[] = {1.0, 1.0, 1.0};
 static float lightPosition[] = {0, 10, 0};
-static float materialD[] = {0.5, 0.5, 0.5};
-static float materialS[] = {0.5, 0.5, 0.5};
-static float exponent = 16;
+static float materialD[] = {0.7, 0.7, 0.7};
+static float materialS[] = {0.7, 0.7, 0.7};
+static float exponent = 32;
 
 static void initShaders()
 {
@@ -98,7 +101,7 @@ static void generateTerrain()
 		for (int j = 0; j < NUM_VERTEX_X; j++)
 		{
 			vertexes[i * NUM_VERTEX_X + j].x = x;
-			vertexes[i * NUM_VERTEX_X + j].y = Perlin_Get2d(x, z, 0.2, 10);
+			vertexes[i * NUM_VERTEX_X + j].y = Perlin_Get2d(x, z, 0.4, 15) * ((-cos(j * M_PI * 2 / NUM_VERTEX_X) + 1) + ((-cos(j * M_PI * 2 / NUM_VERTEX_X * 5) + 1) / 5.0) + ((-cos(j * M_PI * 2 / NUM_VERTEX_X * 7) + 1) / 7.0)) * ((-cos(i * M_PI * 2 / NUM_VERTEX_Z) + 1) + ((-cos(i * M_PI * 2 / NUM_VERTEX_Z * 5) + 1) / 5.0) + ((-cos(i * M_PI * 2 / NUM_VERTEX_Z * 7) + 1) / 7.0)) * 0.25;
 			vertexes[i * NUM_VERTEX_X + j].z = z;
 
 			colors[i * NUM_VERTEX_X + j].x = 1;
@@ -226,6 +229,22 @@ static void move()
 	}
 }
 
+static void drawTerrain(int offsetX, int offsetZ)
+{
+	for (int i = -1; i <= 1; i++)
+	{
+		for (int j = -1; j <= 1; j++)
+		{
+			mIdentity(&modelMatrix);
+			translate(&modelMatrix, (i + offsetX) * SIDE_LENGTH_X, 0, (j + offsetZ) * SIDE_LENGTH_Z);
+			glUniformMatrix4fv(modelMatrixLoc, 1, GL_TRUE, modelMatrix.values);
+			glBindVertexArray(va[0]);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferId[3]);
+			glDrawElements(GL_TRIANGLE_STRIP, (NUM_VERTEX_X - 1) * (NUM_VERTEX_Z * 2 + 1), GL_UNSIGNED_INT, 0);
+		}
+	}
+}
+
 static void display()
 {
 	mIdentity(&modelMatrix);
@@ -241,10 +260,17 @@ static void display()
 	translate(&viewMatrix, -cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
 	glUniformMatrix4fv(viewMatrixLoc, 1, GL_TRUE, viewMatrix.values);
 
+	static float angleEarth = -45;
+
+	translate(&modelMatrix, cameraPosition.x + 7, 7, cameraPosition.z + 5);
 	glUniformMatrix4fv(modelMatrixLoc, 1, GL_TRUE, modelMatrix.values);
-	glBindVertexArray(va[0]);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferId[3]);
-	glDrawElements(GL_TRIANGLE_STRIP, (NUM_VERTEX_X - 1) * (NUM_VERTEX_Z * 2 + 1), GL_UNSIGNED_INT, 0);
+	sphere_draw(earth);
+
+	drawTerrain(cameraPosition.x / SIDE_LENGTH_X, cameraPosition.z / SIDE_LENGTH_Z);
+
+	angleEarth += 0.5;
+	if (angleEarth >= 360.0)
+		angleEarth -= 360.0;
 
 	glutSwapBuffers();
 }
@@ -259,7 +285,7 @@ static void reshapeFunc(int w, int h)
 {
 	glViewport(0, 0, w, h);
 	float aspect = (float)w / h;
-	setPerspective(&projectionMatrix, 70, aspect, -0.1, -2000);
+	setPerspective(&projectionMatrix, 70, aspect, -0.05, -2000);
 	glUniformMatrix4fv(projMatrixLoc, 1, GL_TRUE, projectionMatrix.values);
 }
 
@@ -317,8 +343,12 @@ int main(int argc, char **argv)
 	glutReshapeFunc(reshapeFunc);
 	glewInit();
 	initShaders();
+
+	earth = sphere_create(0.7, 40, 40, {1.2, 1.2, 2});
+	sphere_bind(earth, vertexPosLoc, vertexColLoc, vertexNormalLoc);
+
 	generateTerrain();
-	glClearColor(0.05, 0.05, 0.10, 1.0);
+	glClearColor(0, 0, 0, 1.0);
 	glutMainLoop();
 	return 0;
 }

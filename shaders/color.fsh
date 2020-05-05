@@ -34,7 +34,9 @@ void main() {
 
     tempColor = ambientLight * materialA + diffuseLight * (materialD * factorD + materialS * factorS);
     tempColor = clamp(tempColor * vertexColorToFS, 0.0, 1.0);
-	pixelColor = vec4(tempColor, 1);
+	pixelColor = vec4(tempColor * 0.65 + 0.35 * (1 - (length(vertexWorldPosition.xz - camera.xz) / 7)), 1);
+
+
 }
 
  
