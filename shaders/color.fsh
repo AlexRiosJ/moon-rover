@@ -34,8 +34,19 @@ void main() {
 
     tempColor = ambientLight * materialA + diffuseLight * (materialD * factorD + materialS * factorS);
     tempColor = clamp(tempColor * vertexColorToFS, 0.0, 1.0);
-	pixelColor = vec4(tempColor * 0.65 + 0.35 * (1 - (length(vertexWorldPosition.xz - camera.xz) / 7)), 1);
 
+    vec3 fogColor = vec3(0, 0, 0);
+    float cameraToVertexDist = length(vertexWorldPosition.xz - camera.xz);
+    float d1 = 2;
+    float d2 = 7;
+    if(cameraToVertexDist <= d1) {
+        pixelColor = vec4(tempColor, 1);
+    } else if(cameraToVertexDist <= d2) {
+        float fogFactor = (cameraToVertexDist - d1) / (d2 - d1);
+        pixelColor = vec4(tempColor * (1 - fogFactor) + fogColor * fogFactor, 1);
+    } else {
+        pixelColor = vec4(fogColor, 1);
+    }
 
 }
 

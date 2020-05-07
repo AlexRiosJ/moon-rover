@@ -34,7 +34,7 @@ static GLuint ambientLightLoc, diffuseLightLoc, lightPositionLoc, materialALoc, 
 static float ambientLight[] = {0, 0, 0};
 static float materialA[] = {0.5, 0.5, 0.5};
 static float diffuseLight[] = {1.0, 1.0, 1.0};
-static float lightPosition[] = {0, 10, 0};
+static float lightPosition[] = {0, 60, 0};
 static float materialD[] = {0.7, 0.7, 0.7};
 static float materialS[] = {0.7, 0.7, 0.7};
 static float exponent = 32;
@@ -262,7 +262,7 @@ static void display()
 
 	static float angleEarth = -45;
 
-	translate(&modelMatrix, cameraPosition.x + 7, 7, cameraPosition.z + 5);
+	translate(&modelMatrix, cameraPosition.x + 2, 2, cameraPosition.z + 2);
 	glUniformMatrix4fv(modelMatrixLoc, 1, GL_TRUE, modelMatrix.values);
 	sphere_draw(earth);
 
@@ -344,7 +344,7 @@ int main(int argc, char **argv)
 	glewInit();
 	initShaders();
 
-	earth = sphere_create(0.7, 40, 40, {1.2, 1.2, 2});
+	earth = sphere_create(0.25, 40, 40, {1.2, 1.2, 2});
 	sphere_bind(earth, vertexPosLoc, vertexColLoc, vertexNormalLoc);
 
 	generateTerrain();
