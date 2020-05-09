@@ -12,12 +12,11 @@ private:
         double y;
         double z;
     };
-    std::vector<Vec3> rawVetexes;
-    std::vector<Vec3> rawNormals;
 
-    std::vector<Vec3> vertexArray;
-    std::vector<Vec3> normalArray;
-    std::vector<Vec3> colorArray;
+    float * vertexArray;
+    float * normalArray;
+    float * colorArray;
+    int vertexCount;
 
     GLuint buffers[4];
     GLuint vertexArrayId;
@@ -26,10 +25,13 @@ private:
     GLuint vertexNormalLoc;
     GLuint programId;
 
+    float * VectorToBuffer(std::vector<Vec3>);
+
 public:
     Shape();
     ~Shape();
     void Load(const char *);
     void Bind(GLuint, GLuint, GLuint, GLuint);
     void Draw();
+    void PrintVertex();
 };

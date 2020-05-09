@@ -25,6 +25,6 @@ add_library(Shape src/shapes/Shape.cpp)
 target_link_libraries(Shape ${GLEW_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY})
 target_link_libraries(Transforms Mat4 m)
 target_link_libraries(Main ${GLEW_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} Utils Transforms m)
-target_link_libraries(ShapeTest Shape)
+target_link_libraries(ShapeTest ${GLEW_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} Shape Utils Transforms m)
 # After build
 # add_custom_command()

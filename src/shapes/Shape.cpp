@@ -5,11 +5,10 @@
 #include <shapes/Shape.hpp>
 #include <GL/glew.h>
 
-#define BIND_BUFFER_SIZE 4
+#define BIND_BUFFER_SIZE 3
 #define BIND_BUFFER_VERTEX_ARRAY 0
 #define BIND_BUFFER_COLOR_ARRAY 1
 #define BIND_BUFFER_NORMAL_ARRAY 2
-#define BIND_BUFFER_INDEX_ARRAY 3
 
 std::vector<std::string> split(const std::string& s, char delimiter)
 {
@@ -21,6 +20,21 @@ std::vector<std::string> split(const std::string& s, char delimiter)
       tokens.push_back(token);
    }
    return tokens;
+}
+
+float * Shape::VectorToBuffer(std::vector<Vec3> vector) 
+{
+    float * buffer = new float[vector.size() * 3]();
+    for (int i = 0; i < vector.size(); i++)
+    {
+        Vec3 vertex = vector[i];
+        int offset = i * 3;
+        buffer[offset + 0] = vertex.x;
+        buffer[offset + 1] = vertex.y;
+        buffer[offset + 2] = vertex.z;
+    }
+
+    return buffer;
 }
 
 Shape::Shape()
@@ -36,6 +50,13 @@ void Shape::Load(const char *path)
     std::string s;
     std::ifstream file(path);
 
+    std::vector<Vec3> rawVetexes;
+    std::vector<Vec3> rawNormals;
+
+    std::vector<Vec3> tmpVertexArray;
+    std::vector<Vec3> tmpNormalArray;
+    std::vector<Vec3> tmpColorArray;
+
     if (!file)
     {
         std::cout << "Impossible to open the file!\n";
@@ -49,14 +70,14 @@ void Shape::Load(const char *path)
         {
             Vec3 vertex;
             file >> vertex.x >> vertex.y >> vertex.z;
-            this->rawVetexes.push_back(vertex);
+            rawVetexes.push_back(vertex);
         }
         // If line header is a normal
         else if (s.compare("vn") == 0)
         {
             Vec3 normal;
             file >> normal.x >> normal.y >> normal.z;
-            this->rawNormals.push_back(normal);
+            rawNormals.push_back(normal);
         }
         // If line header is a face
         else if (s.compare("f") == 0)
@@ -66,21 +87,29 @@ void Shape::Load(const char *path)
             {
                 file >> faceVertex;
                 std::vector<std::string> tokens = split(faceVertex, '/');
+                
                 unsigned int v = stoi(tokens[0]) - 1;
                 unsigned int vn = stoi(tokens[2]) - 1;
-                Vec3 vertex = this->rawVetexes[v];
-                Vec3 normal = this->rawNormals[vn];
+                Vec3 vertex = rawVetexes[v];
+                Vec3 normal = rawNormals[vn];
                 Vec3 color;
                 color.x = 1.0;
                 color.y = 1.0;
                 color.z = 1.0;
 
-                this->vertexArray.push_back(vertex);
-                this->normalArray.push_back(normal);
-                this->colorArray.push_back(color);
+                tmpVertexArray.push_back(vertex);
+                tmpNormalArray.push_back(normal);
+                tmpColorArray.push_back(color);
             }
+            
         }
     }
+
+    this->vertexArray = this->VectorToBuffer(tmpVertexArray);
+    this->colorArray = this->VectorToBuffer(tmpColorArray);
+    this->normalArray = this->VectorToBuffer(tmpNormalArray);
+
+    this->vertexCount = tmpVertexArray.size();
 }
 
 void Shape::Bind(GLuint programId, GLuint vertexArrayLoc, GLuint normalArrayLoc, GLuint colorArrayLoc)
@@ -94,21 +123,36 @@ void Shape::Bind(GLuint programId, GLuint vertexArrayLoc, GLuint normalArrayLoc,
     this->vertexColorLoc = colorArrayLoc;
     this->vertexNormalLoc = normalArrayLoc;
 
-    int arraySize = this->vertexArray.size() * 3 * sizeof(float);
+    int arraySize = this->vertexCount * sizeof(float) * 3;
 
     glBindBuffer(GL_ARRAY_BUFFER, this->buffers[BIND_BUFFER_VERTEX_ARRAY]);
-    glBufferData(GL_ARRAY_BUFFER, arraySize, this->vertexArray.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, arraySize, this->vertexArray, GL_STATIC_DRAW);
     glEnableVertexAttribArray(this->vertexPosLoc);
     glVertexAttribPointer(this->vertexPosLoc, 3, GL_FLOAT, 0, 0, 0);
 
     glBindBuffer(GL_ARRAY_BUFFER, this->buffers[BIND_BUFFER_COLOR_ARRAY]);
-    glBufferData(GL_ARRAY_BUFFER, arraySize, this->colorArray.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, arraySize, this->colorArray, GL_STATIC_DRAW);
     glEnableVertexAttribArray(this->vertexColorLoc);
     glVertexAttribPointer(this->vertexColorLoc, 3, GL_FLOAT, 0, 0, 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, this->buffers[BIND_BUFFER_NORMAL_ARRAY]);
+    glBufferData(GL_ARRAY_BUFFER, arraySize, this->normalArray, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(this->vertexNormalLoc);
+    glVertexAttribPointer(this->vertexNormalLoc, 3, GL_FLOAT, 0, 0, 0);
 }
 
-void Draw()
+void Shape::Draw()
 {
-    int count = this->vertexArray.size();
-    glDrawArrays(GL_TRIANGLES, 0, count);
+    int triangleCount = this->vertexCount;
+    glUseProgram(this->programId);
+    glDrawArrays(GL_TRIANGLES, 0, triangleCount);
+}
+
+void Shape::PrintVertex()
+{
+    for(int i = 0; i < this->vertexCount; i++)
+    {
+        int offset = i * 3;
+        std::cout << i + 1 << " <" << this->vertexArray[offset + 0] << "," << this->vertexArray[offset + 1] << "," << this->vertexArray[offset + 2] << ">\n";
+    }
 }
