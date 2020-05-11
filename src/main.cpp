@@ -22,7 +22,7 @@ Sphere earth;
 
 unsigned char keys[256];
 
-static GLuint programId, va[1], bufferId[4], vertexPosLoc, vertexColLoc, vertexNormalLoc, modelMatrixLoc, viewMatrixLoc, projMatrixLoc;
+static GLuint programId, va[1], bufferId[4], vertexPosLoc, vertexColLoc, vertexTexcoordLoc, vertexNormalLoc, modelMatrixLoc, viewMatrixLoc, projMatrixLoc;
 static Mat4 modelMatrix, viewMatrix, projectionMatrix;
 
 static float movex = 0, movey = 0;
@@ -38,6 +38,26 @@ static float lightPosition[] = {0, 60, 0};
 static float materialD[] = {0.7, 0.7, 0.7};
 static float materialS[] = {0.7, 0.7, 0.7};
 static float exponent = 32;
+
+static GLuint textures[1];
+
+static void initTexture(const char *filename, GLuint textureId)
+{
+	unsigned char *data;
+	unsigned int width, height;
+	glBindTexture(GL_TEXTURE_2D, textureId);
+	loadBMP(filename, &data, &width, &height);
+	printf("%d, %d\n", width, height);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, data);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+}
+
+static void initTextures()
+{
+	glGenTextures(1, textures);
+	initTexture("textures/earth.bmp", textures[0]);
+}
 
 static void initShaders()
 {
@@ -56,6 +76,7 @@ static void initShaders()
 
 	vertexPosLoc = glGetAttribLocation(programId, "vertexPosition");
 	vertexColLoc = glGetAttribLocation(programId, "vertexColor");
+	vertexTexcoordLoc = glGetAttribLocation(programId, "vertexTexcoord");
 	vertexNormalLoc = glGetAttribLocation(programId, "vertexNormal");
 	modelMatrixLoc = glGetUniformLocation(programId, "modelMatrix");
 	viewMatrixLoc = glGetUniformLocation(programId, "viewMatrix");
@@ -263,12 +284,14 @@ static void display()
 	static float angleEarth = -45;
 
 	translate(&modelMatrix, cameraPosition.x + 2, 2, cameraPosition.z + 2);
+	rotateX(&modelMatrix, 23.5);
+	rotateZ(&modelMatrix, -angleEarth);
 	glUniformMatrix4fv(modelMatrixLoc, 1, GL_TRUE, modelMatrix.values);
 	sphere_draw(earth);
 
 	drawTerrain(cameraPosition.x / SIDE_LENGTH_X, cameraPosition.z / SIDE_LENGTH_Z);
 
-	angleEarth += 0.5;
+	angleEarth += 0.08;
 	if (angleEarth >= 360.0)
 		angleEarth -= 360.0;
 
@@ -342,10 +365,11 @@ int main(int argc, char **argv)
 	glutKeyboardUpFunc(keyReleased);
 	glutReshapeFunc(reshapeFunc);
 	glewInit();
+	initTextures();
 	initShaders();
 
-	earth = sphere_create(0.25, 40, 40, {1.2, 1.2, 2});
-	sphere_bind(earth, vertexPosLoc, vertexColLoc, vertexNormalLoc);
+	earth = sphere_create(0.25, 40, 40, {2.5, 2.5, 2.5});
+	sphere_bind(earth, vertexPosLoc, vertexColLoc, vertexTexcoordLoc, vertexNormalLoc);
 
 	generateTerrain();
 	glClearColor(0, 0, 0, 1.0);

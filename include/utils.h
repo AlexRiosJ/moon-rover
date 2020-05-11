@@ -10,6 +10,12 @@ typedef struct Vertex
     float z;
 } Vertex;
 
+typedef struct Texcoord
+{
+    float u;
+    float v;
+} Texcoord;
+
 typedef struct Triangle
 {
     Vertex pointA;
