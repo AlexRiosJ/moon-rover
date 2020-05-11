@@ -31,7 +31,7 @@ public:
     Shape();
     ~Shape();
     void Load(const char *);
-    void Bind(GLuint, GLuint, GLuint, GLuint);
+    void Bind(GLuint, const char *, const char *, const char *);
     void Draw();
     void PrintVertex();
 };

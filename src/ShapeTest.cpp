@@ -10,7 +10,10 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-static Shape s;
+static Shape chasis;
+static Shape rockerLeft;
+static Shape rockerRigth;
+
 
 static Mat4 modelMatrix, projectionMatrix, viewMatrix;
 static GLuint programId1;
@@ -43,9 +46,6 @@ static void initShaders()
 
 	glUseProgram(programId1);
 	// MODELS
-	vertexPositionLoc = glGetAttribLocation(programId1, "vertexPosition");
-	vertexNormalLoc = glGetAttribLocation(programId1, "vertexNormal");
-	vertexColorLoc = glGetAttribLocation(programId1, "vertexColor");
 	modelMatrixLoc = glGetUniformLocation(programId1, "modelMatrix");
 	viewMatrixLoc = glGetUniformLocation(programId1, "viewMatrix");
 	projectionMatrixLoc = glGetUniformLocation(programId1, "projectionMatrix");
@@ -98,13 +98,15 @@ static void displayFunc()
 	glUniformMatrix4fv(viewMatrixLoc, 1, 1, viewMatrix.values);
 
 	mIdentity(&modelMatrix);
-	translate(&modelMatrix, 0, 0, -0.5);
+	translate(&modelMatrix, 0, 0, -0.8);
+	/*
 	rotateX(&modelMatrix, angleX -= 0.1);
 	rotateY(&modelMatrix, angleY -= 0.1);
 	rotateZ(&modelMatrix, angleZ -= 0.1);
-	// rotateZ(&modelMatrix, angleZ -= 0.5);
+	*/
 	glUniformMatrix4fv(modelMatrixLoc, 1, 1, modelMatrix.values);
-	s.Draw();
+	chasis.Draw();
+	rockerLeft.Draw();
 	
 	glUniformMatrix4fv(viewMatrixLoc, 1, 1, viewMatrix.values);
 
@@ -132,8 +134,12 @@ int main(int argc, char **argv)
 
 	float baseColor[3] = {.5, .6, .7};
 	float topColor[3] = {.7, .6, .5};
-    s.Load("./meshes/body.obj");
-	s.Bind(programId1, vertexPositionLoc, vertexNormalLoc, vertexColorLoc);
+    chasis.Load("./meshes/body.obj");
+	chasis.Bind(programId1, "vertexPosition", "vertexNormal", "vertexColor");
+
+	rockerLeft.Load("./meshes/rocker.obj");
+	rockerLeft.Bind(programId1, "vertexPosition", "vertexNormal", "vertexColor");
+
 	// s.PrintVertex();
 
 	glClearColor(0.3, 0.3, 0.3, 1.0);
