@@ -20,11 +20,13 @@
 
 Sphere earth;
 Terrain terrain;
+Sphere skybox;
 
 unsigned char keys[256];
 
 static GLuint programId1, vertexPosLoc1, vertexColLoc1, vertexTexcoordLoc1, vertexNormalLoc1, modelMatrixLoc1, viewMatrixLoc1, projMatrixLoc1;
 static GLuint programId2, vertexPosLoc2, vertexColLoc2, vertexTexcoordLoc2, vertexNormalLoc2, modelMatrixLoc2, viewMatrixLoc2, projMatrixLoc2;
+static GLuint programId3, vertexPosLoc3, vertexColLoc3, vertexTexcoordLoc3, vertexNormalLoc3, modelMatrixLoc3, viewMatrixLoc3, projMatrixLoc3;
 static Mat4 modelMatrix, viewMatrix, projectionMatrix;
 
 static float movex = 0, movey = 0;
@@ -41,7 +43,7 @@ static float materialD[] = {0.7, 0.7, 0.7};
 static float materialS[] = {0.7, 0.7, 0.7};
 static float exponent = 32;
 
-static GLuint textures[3];
+static GLuint textures[4];
 
 static void initTexture(const char *filename, GLuint textureId)
 {
@@ -65,10 +67,11 @@ static void initTexture(const char *filename, GLuint textureId)
 
 static void initTextures()
 {
-	glGenTextures(3, textures);
+	glGenTextures(4, textures);
 	initTexture("textures/moon-sand.bmp", textures[0]);
 	initTexture("textures/earth.bmp", textures[1]);
 	initTexture("textures/earth-clouds.bmp", textures[2]);
+	initTexture("textures/skybox.bmp", textures[3]);
 }
 
 static void initShaders()
@@ -147,6 +150,26 @@ static void initShaders()
 	glUniform3fv(materialDLoc, 1, materialD);
 	glUniform3fv(materialSLoc, 1, materialS);
 	glUniform1f(exponentLoc, exponent);
+
+	GLuint vShader3 = compileShader("shaders/skybox.vsh", GL_VERTEX_SHADER);
+	if (!shaderCompiled(vShader3))
+		return;
+	GLuint fShader3 = compileShader("shaders/skybox.fsh", GL_FRAGMENT_SHADER);
+	if (!shaderCompiled(fShader3))
+		return;
+	programId3 = glCreateProgram();
+	glAttachShader(programId3, vShader3);
+	glAttachShader(programId3, fShader3);
+	glLinkProgram(programId3);
+	glUseProgram(programId3);
+
+	vertexPosLoc3 = glGetAttribLocation(programId3, "vertexPosition");
+	vertexColLoc3 = glGetAttribLocation(programId3, "vertexColor");
+	vertexTexcoordLoc3 = glGetAttribLocation(programId3, "vertexTexcoord");
+	vertexNormalLoc3 = glGetAttribLocation(programId3, "vertexNormal");
+	modelMatrixLoc3 = glGetUniformLocation(programId3, "modelMatrix");
+	viewMatrixLoc3 = glGetUniformLocation(programId3, "viewMatrix");
+	projMatrixLoc3 = glGetUniformLocation(programId3, "projectionMatrix");
 
 	glEnable(GL_DEPTH_TEST);
 	//	glEnable(GL_CULL_FACE);
@@ -257,6 +280,26 @@ static void display()
 	glUniformMatrix4fv(modelMatrixLoc2, 1, GL_TRUE, modelMatrix.values);
 	sphere_draw(earth);
 
+	// MVP al shader 3 (skybox)
+	glUseProgram(programId3);
+	glUniformMatrix4fv(projMatrixLoc3, 1, GL_TRUE, projectionMatrix.values);
+	mIdentity(&viewMatrix);
+	glUniform3f(cameraLoc, cameraPosition.x, cameraPosition.y, cameraPosition.z);
+	rotateX(&viewMatrix, movey * 0.08);
+	rotateY(&viewMatrix, movex * 0.08);
+	translate(&viewMatrix, -cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
+	glUniformMatrix4fv(viewMatrixLoc3, 1, GL_TRUE, viewMatrix.values);
+
+	mIdentity(&modelMatrix);
+	glActiveTexture(GL_TEXTURE0);
+	glUniform1i(glGetUniformLocation(programId3, "texture3"), 3);
+	glBindTexture(GL_TEXTURE_2D, textures[3]);
+	rotateX(&modelMatrix, 180);
+	rotateZ(&modelMatrix, -angleEarth * 0.1);
+	translate(&modelMatrix, cameraPosition.x, 0, cameraPosition.z);
+	glUniformMatrix4fv(modelMatrixLoc3, 1, GL_TRUE, modelMatrix.values);
+	sphere_draw(skybox);
+
 	angleEarth += 0.08;
 	if (angleEarth >= 360.0)
 		angleEarth -= 360.0;
@@ -339,6 +382,9 @@ int main(int argc, char **argv)
 
 	earth = sphere_create(0.7, 40, 40, {1, 1, 1});
 	sphere_bind(earth, vertexPosLoc2, vertexColLoc2, vertexTexcoordLoc2, vertexNormalLoc2);
+
+	skybox = sphere_create(1000, 400, 400, {1, 1, 1});
+	sphere_bind(skybox, vertexPosLoc3, vertexColLoc3, vertexTexcoordLoc3, vertexNormalLoc3);
 
 	glClearColor(0, 0, 0, 1.0);
 	glutMainLoop();
