@@ -2,8 +2,8 @@
 #include <GL/freeglut.h>
 #include "utils.h"
 #include "transforms.h"
-#include "perlin.h"
 #include "sphere.h"
+#include "terrain.h"
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
@@ -19,10 +19,11 @@
 #define SIDE_LENGTH_Z 20
 
 Sphere earth;
+Terrain terrain;
 
 unsigned char keys[256];
 
-static GLuint programId1, va[1], bufferId[4], vertexPosLoc1, vertexColLoc1, vertexTexcoordLoc1, vertexNormalLoc1, modelMatrixLoc1, viewMatrixLoc1, projMatrixLoc1;
+static GLuint programId1, vertexPosLoc1, vertexColLoc1, vertexTexcoordLoc1, vertexNormalLoc1, modelMatrixLoc1, viewMatrixLoc1, projMatrixLoc1;
 static GLuint programId2, vertexPosLoc2, vertexColLoc2, vertexTexcoordLoc2, vertexNormalLoc2, modelMatrixLoc2, viewMatrixLoc2, projMatrixLoc2;
 static Mat4 modelMatrix, viewMatrix, projectionMatrix;
 
@@ -40,7 +41,7 @@ static float materialD[] = {0.7, 0.7, 0.7};
 static float materialS[] = {0.7, 0.7, 0.7};
 static float exponent = 32;
 
-static GLuint textures[2];
+static GLuint textures[3];
 
 static void initTexture(const char *filename, GLuint textureId)
 {
@@ -50,15 +51,24 @@ static void initTexture(const char *filename, GLuint textureId)
 	loadBMP(filename, &data, &width, &height);
 	printf("%d, %d\n", width, height);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, data);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 8);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 }
 
 static void initTextures()
 {
-	glGenTextures(2, textures);
-	initTexture("textures/earth.bmp", textures[0]);
-	initTexture("textures/earth-clouds.bmp", textures[1]);
+	glGenTextures(3, textures);
+	initTexture("textures/moon-sand.bmp", textures[0]);
+	initTexture("textures/earth.bmp", textures[1]);
+	initTexture("textures/earth-clouds.bmp", textures[2]);
 }
 
 static void initShaders()
@@ -78,6 +88,7 @@ static void initShaders()
 
 	vertexPosLoc1 = glGetAttribLocation(programId1, "vertexPosition");
 	vertexColLoc1 = glGetAttribLocation(programId1, "vertexColor");
+	vertexTexcoordLoc1 = glGetAttribLocation(programId1, "vertexTexcoord");
 	vertexNormalLoc1 = glGetAttribLocation(programId1, "vertexNormal");
 	modelMatrixLoc1 = glGetUniformLocation(programId1, "modelMatrix");
 	viewMatrixLoc1 = glGetUniformLocation(programId1, "viewMatrix");
@@ -142,117 +153,6 @@ static void initShaders()
 	//	glFrontFace(GL_CW);
 }
 
-static void generateTerrain()
-{
-	Vertex *vertexes = new Vertex[NUM_VERTEX_X * NUM_VERTEX_Z];
-	Vertex *colors = new Vertex[NUM_VERTEX_X * NUM_VERTEX_Z];
-	Vertex *normals = new Vertex[NUM_VERTEX_X * NUM_VERTEX_Z];
-	GLuint *indexBuffer = new GLuint[(NUM_VERTEX_X - 1) * (NUM_VERTEX_Z * 2 + 1)];
-	// printf("%d\n", (NUM_VERTEX_X - 1) * (NUM_VERTEX_Z * 2 + 1));
-	float x = -SIDE_LENGTH_X / 2.0;
-	float z = -SIDE_LENGTH_Z / 2.0;
-	float dx = (float)SIDE_LENGTH_X / (float)(NUM_VERTEX_X - 1);
-	float dz = (float)SIDE_LENGTH_Z / (float)(NUM_VERTEX_Z - 1);
-	srand(time(NULL));
-	// printf("%.2f, %.2f, %.2f, %.2f\n", x, z, dx, dz);
-	for (int i = 0; i < NUM_VERTEX_Z; i++)
-	{
-		for (int j = 0; j < NUM_VERTEX_X; j++)
-		{
-			vertexes[i * NUM_VERTEX_X + j].x = x;
-			vertexes[i * NUM_VERTEX_X + j].y = Perlin_Get2d(x, z, 0.4, 15) * ((-cos(j * M_PI * 2 / NUM_VERTEX_X) + 1) + ((-cos(j * M_PI * 2 / NUM_VERTEX_X * 5) + 1) / 5.0) + ((-cos(j * M_PI * 2 / NUM_VERTEX_X * 7) + 1) / 7.0)) * ((-cos(i * M_PI * 2 / NUM_VERTEX_Z) + 1) + ((-cos(i * M_PI * 2 / NUM_VERTEX_Z * 5) + 1) / 5.0) + ((-cos(i * M_PI * 2 / NUM_VERTEX_Z * 7) + 1) / 7.0)) * 0.25;
-			vertexes[i * NUM_VERTEX_X + j].z = z;
-
-			colors[i * NUM_VERTEX_X + j].x = 1;
-			colors[i * NUM_VERTEX_X + j].y = 1;
-			colors[i * NUM_VERTEX_X + j].z = 1;
-
-			x += dx;
-		}
-		x = -SIDE_LENGTH_X / 2.0;
-		z += dz;
-	}
-
-	// Generate index buffer
-	for (int i = 0; i < NUM_VERTEX_X - 1; i++)
-	{
-		for (int j = 0; j < NUM_VERTEX_Z * 2 + 1; j++)
-		{
-			int index = i * (NUM_VERTEX_Z * 2 + 1) + j;
-			if (j == NUM_VERTEX_Z * 2)
-			{
-				// printf("%d, %x\n", index, RESET);
-				indexBuffer[index] = RESET;
-			}
-			else
-			{
-				int num = i * NUM_VERTEX_Z + (j / 2);
-				indexBuffer[index] = j % 2 == 0 ? num : num + NUM_VERTEX_Z;
-				// printf("%d, %d\n", index, j % 2 == 0 ? num : num + NUM_VERTEX_Z);
-			}
-		}
-	}
-
-	for (int i = 0; i < NUM_VERTEX_X * NUM_VERTEX_Z; i++)
-	{
-		normals[i] = {0, 0, 0};
-	}
-
-	int index = 0;
-	for (int i = 0; i < (NUM_VERTEX_Z - 1); i++)
-	{
-		for (int j = 0; j < (NUM_VERTEX_X - 1) * 2; j++)
-		{
-			Vertex A = subtractVertex(vertexes[indexBuffer[index + j]], vertexes[indexBuffer[index + j + 1]]);
-			Vertex B = subtractVertex(vertexes[indexBuffer[index + j]], vertexes[indexBuffer[index + j + 2]]);
-			Vertex C = crossProduct(A, B);
-			if (j % 2 != 0)
-			{
-				C.x *= -1;
-				C.y *= -1;
-				C.z *= -1;
-			}
-
-			normals[indexBuffer[index + j]].x += C.x;
-			normals[indexBuffer[index + j]].y += C.y;
-			normals[indexBuffer[index + j]].z += C.z;
-
-			normals[indexBuffer[index + j + 1]].x += C.x;
-			normals[indexBuffer[index + j + 1]].y += C.y;
-			normals[indexBuffer[index + j + 1]].z += C.z;
-
-			normals[indexBuffer[index + j + 2]].x += C.x;
-			normals[indexBuffer[index + j + 2]].y += C.y;
-			normals[indexBuffer[index + j + 2]].z += C.z;
-		}
-		index += (NUM_VERTEX_X * 2 + 1);
-	}
-
-	glGenVertexArrays(1, va);
-	glBindVertexArray(va[0]);
-	glGenBuffers(4, bufferId);
-
-	glBindBuffer(GL_ARRAY_BUFFER, bufferId[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * NUM_VERTEX_X * NUM_VERTEX_Z, vertexes, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(vertexPosLoc1);
-	glVertexAttribPointer(vertexPosLoc1, 3, GL_FLOAT, 0, 0, 0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, bufferId[1]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * NUM_VERTEX_X * NUM_VERTEX_Z, colors, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(vertexColLoc1);
-	glVertexAttribPointer(vertexColLoc1, 3, GL_FLOAT, 0, 0, 0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, bufferId[2]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * NUM_VERTEX_X * NUM_VERTEX_Z, normals, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(vertexNormalLoc1);
-	glVertexAttribPointer(vertexNormalLoc1, 3, GL_FLOAT, 0, 0, 0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, bufferId[3]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLuint) * (NUM_VERTEX_X - 1) * (NUM_VERTEX_Z * 2 + 1), indexBuffer, GL_STATIC_DRAW);
-	glPrimitiveRestartIndex(RESET);
-	glEnable(GL_PRIMITIVE_RESTART);
-}
-
 static void move()
 {
 	cameraSpeed = keys[32] ? 0.1 : 0.05; // If space bar is pressed duplicate speed
@@ -297,9 +197,7 @@ static void drawTerrain(int offsetX, int offsetZ)
 			mIdentity(&modelMatrix);
 			translate(&modelMatrix, (i + offsetX) * SIDE_LENGTH_X, 0, (j + offsetZ) * SIDE_LENGTH_Z);
 			glUniformMatrix4fv(modelMatrixLoc1, 1, GL_TRUE, modelMatrix.values);
-			glBindVertexArray(va[0]);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferId[3]);
-			glDrawElements(GL_TRIANGLE_STRIP, (NUM_VERTEX_X - 1) * (NUM_VERTEX_Z * 2 + 1), GL_UNSIGNED_INT, 0);
+			terrain_draw(terrain);
 		}
 	}
 }
@@ -322,7 +220,9 @@ static void display()
 
 	// Dibujar terreno
 	mIdentity(&modelMatrix);
-	glUniformMatrix4fv(modelMatrixLoc1, 1, GL_TRUE, modelMatrix.values);
+	glActiveTexture(GL_TEXTURE0);
+	glUniform1i(glGetUniformLocation(programId1, "texture0"), 0);
+	glBindTexture(GL_TEXTURE_2D, textures[0]);
 	drawTerrain(cameraPosition.x / SIDE_LENGTH_X, cameraPosition.z / SIDE_LENGTH_Z);
 
 	// MVP al shader 2 (earth)
@@ -339,14 +239,15 @@ static void display()
 	mIdentity(&modelMatrix);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glActiveTexture(GL_TEXTURE0);
-	glUniform1i(glGetUniformLocation(programId2, "texture0"), 0);
-	glBindTexture(GL_TEXTURE_2D, textures[0]);
-
-	glEnable(GL_BLEND);
 	glActiveTexture(GL_TEXTURE1);
 	glUniform1i(glGetUniformLocation(programId2, "texture1"), 1);
 	glBindTexture(GL_TEXTURE_2D, textures[1]);
+
+	glEnable(GL_BLEND);
+	glActiveTexture(GL_TEXTURE2);
+	glUniform1i(glGetUniformLocation(programId2, "texture2"), 2);
+	glBindTexture(GL_TEXTURE_2D, textures[2]);
+	glDisable(GL_BLEND);
 
 	static float angleEarth = -45;
 
@@ -382,7 +283,6 @@ static void exitFunc(unsigned char key, int x, int y)
 {
 	if (key == 27)
 	{
-		glDeleteVertexArrays(1, va);
 		exit(0);
 	}
 }
@@ -434,10 +334,12 @@ int main(int argc, char **argv)
 	initTextures();
 	initShaders();
 
+	terrain = terrain_create(NUM_VERTEX_X, NUM_VERTEX_Z, SIDE_LENGTH_X, SIDE_LENGTH_Z, {1, 1, 1});
+	terrain_bind(terrain, vertexPosLoc1, vertexColLoc1, vertexTexcoordLoc1, vertexNormalLoc1);
+
 	earth = sphere_create(0.7, 40, 40, {1, 1, 1});
 	sphere_bind(earth, vertexPosLoc2, vertexColLoc2, vertexTexcoordLoc2, vertexNormalLoc2);
 
-	generateTerrain();
 	glClearColor(0, 0, 0, 1.0);
 	glutMainLoop();
 	return 0;
