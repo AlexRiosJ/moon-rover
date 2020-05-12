@@ -112,12 +112,12 @@ void Shape::Load(const char *path)
     this->vertexCount = tmpVertexArray.size();
 }
 
-void Shape::Bind(GLuint programId, const char * vertexLocation, const char * normalLocation, const char * colorLocation)
+void Shape::Bind(GLuint programId, GLuint vertexLocation, GLuint normalLocation, GLuint colorLocation)
 {
     this->programId = programId;
-    this->vertexPosLoc = glGetAttribLocation(this->programId, vertexLocation);
-    this->vertexColorLoc = glGetAttribLocation(this->programId, colorLocation);
-    this->vertexNormalLoc = glGetAttribLocation(this->programId, normalLocation);
+    this->vertexPosLoc = vertexLocation;
+    this->vertexColorLoc = colorLocation;
+    this->vertexNormalLoc = normalLocation;
     
     glGenVertexArrays(1, &this->vertexArrayId);
     glBindVertexArray(this->vertexArrayId);
@@ -144,6 +144,7 @@ void Shape::Bind(GLuint programId, const char * vertexLocation, const char * nor
 void Shape::Draw()
 {
     int triangleCount = this->vertexCount;
+    glBindVertexArray(this->vertexArrayId);
     glDrawArrays(GL_TRIANGLES, 0, triangleCount);
 }
 
