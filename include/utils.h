@@ -10,6 +10,12 @@ typedef struct Vertex
     float z;
 } Vertex;
 
+typedef struct Texcoord
+{
+    float u;
+    float v;
+} Texcoord;
+
 typedef struct Triangle
 {
     Vertex pointA;
@@ -23,5 +29,8 @@ bool shaderCompiled(GLuint shaderId);
 bool loadBMP(const char *filename, unsigned char **pdata, unsigned int *width, unsigned int *height);
 void processArrayBuffer(GLuint bufferId, void *array, int arraySize, GLuint loc, int size, int type);
 void processIndexBuffer(GLuint bufferId, void *array, int arraySize, int restartIndex);
+
+Vertex subtractVertex(Vertex origin, Vertex dest);
+Vertex crossProduct(Vertex A, Vertex B);
 
 #endif /* UTILS_H_ */
