@@ -5,30 +5,18 @@
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
-#include <shapes/Shape.hpp>
+#include <shapes/Rover.hpp>
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
-static Shape chasis;
-
-static Shape rockerLeft;
-static Shape bogieLeft;
-static Shape driveLeftBack;
-static Shape driveLeftFront;
-static Shape driveWheelBack;
-static Shape driveWheelMid;
-static Shape driveWheelFront;
-
-static Shape rockerRigth;
-
+static Rover r;
 
 static Mat4 modelMatrix, projectionMatrix, viewMatrix;
 static GLuint programId1;
 static GLuint vertexPositionLoc, vertexNormalLoc, modelMatrixLoc, viewMatrixLoc, projectionMatrixLoc, vertexColorLoc;
 static GLuint ambientLightLoc, diffuseLightLoc, lightPositionLoc, materialALoc, materialDLoc, materialSLoc, exponentLoc, cameraLoc;
 
-static float angleY = 0, angleX = 0, angleZ = 0;
 static float ambientLight[] = {1.0, 1.0, 1.0};
 static float materialA[] = {0.5, 0.5, 0.5};
 static float diffuseLight[] = {1.0, 1.0, 1.0};
@@ -109,43 +97,10 @@ static void displayFunc()
 	mIdentity(&viewMatrix);
 	glUniformMatrix4fv(viewMatrixLoc, 1, 1, viewMatrix.values);
 
-	mIdentity(&modelMatrix);
-	translate(&modelMatrix, 0, 0, -0.8);
-	
-	rotateX(&modelMatrix, angleX -= 0.2);
-	rotateY(&modelMatrix, angleY -= 0.2);
-	rotateZ(&modelMatrix, angleZ -= 0.2);
-	
-	pushMatrix(&modelMatrix);
-
-	glUniformMatrix4fv(modelMatrixLoc, 1, 1, modelMatrix.values);
-	chasis.Draw();
-
-	translate(&modelMatrix, 0.15620, 0.05507, 0.07490);
-	glUniformMatrix4fv(modelMatrixLoc, 1, 1, modelMatrix.values);
-	rockerLeft.Draw();
-
-	pushMatrix(&modelMatrix);
-	
-	translate(&modelMatrix, 0.0247, -0.06163, -0.18007);
-	glUniformMatrix4fv(modelMatrixLoc, 1, 1, modelMatrix.values);
-	bogieLeft.Draw();
-
-	translate(&modelMatrix, 0.0791, -0.09844, -0.14783);
-	glUniformMatrix4fv(modelMatrixLoc, 1, 1, modelMatrix.values);
-	driveLeftBack.Draw();
-
-	popMatrix(&modelMatrix);
-	translate(&modelMatrix, 0.1038, -0.16007, 0.2101);
-	glUniformMatrix4fv(modelMatrixLoc, 1, 1, modelMatrix.values);
-	driveLeftFront.Draw();
-
-	translate(&modelMatrix, 0.01, 0.0, 0.0);
-	glUniformMatrix4fv(modelMatrixLoc, 1, 1, modelMatrix.values);
-	driveWheelFront.Draw();
+	r.Draw(modelMatrixLoc);
 
 	glUniformMatrix4fv(viewMatrixLoc, 1, 1, viewMatrix.values);
-
+	// emptyStack();
 	glutSwapBuffers();
 }
 
@@ -168,31 +123,8 @@ int main(int argc, char **argv)
 	glEnable(GL_CULL_FACE);
 	initShaders();
 
-	float baseColor[3] = {.5, .6, .7};
-	float topColor[3] = {.7, .6, .5};
-    chasis.Load("./meshes/body.obj");
-	chasis.Bind(programId1, vertexPositionLoc, vertexNormalLoc, vertexColorLoc);
-
-	rockerLeft.Load("./meshes/rocker.obj");
-	rockerLeft.Bind(programId1, vertexPositionLoc, vertexNormalLoc, vertexColorLoc);
-
-	bogieLeft.Load("./meshes/bogie.obj");
-	bogieLeft.Bind(programId1, vertexPositionLoc, vertexNormalLoc, vertexColorLoc);
-
-	driveLeftFront.Load("./meshes/drive.obj");
-	driveLeftFront.Bind(programId1, vertexPositionLoc, vertexNormalLoc, vertexColorLoc);
-
-	driveLeftBack.Load("./meshes/drive.obj");
-	driveLeftBack.Bind(programId1, vertexPositionLoc, vertexNormalLoc, vertexColorLoc);
-	
-	driveWheelFront.Load("./meshes/wheel.obj");
-	driveWheelFront.Bind(programId1, vertexPositionLoc, vertexNormalLoc, vertexColorLoc);
-
-	driveWheelMid.Load("./meshes/wheel.obj");
-	driveWheelMid.Bind(programId1, vertexPositionLoc, vertexNormalLoc, vertexColorLoc);
-
-	driveWheelBack.Load("./meshes/wheel.obj");
-	driveWheelBack.Bind(programId1, vertexPositionLoc, vertexNormalLoc, vertexColorLoc);
+	r.Load();
+	r.Bind(programId1, vertexPositionLoc, vertexNormalLoc, vertexColorLoc);
 
 	glClearColor(0.3, 0.3, 0.3, 1.0);
 	glutMainLoop();
