@@ -274,7 +274,7 @@ static void display()
 
 	static float angleEarth = -45;
 
-	translate(&modelMatrix, cameraPosition.x + 5, 4, cameraPosition.z + 5);
+	translate(&modelMatrix, cameraPosition.x + 50, 20, cameraPosition.z + 50);
 	rotateX(&modelMatrix, 23.5);
 	rotateZ(&modelMatrix, -angleEarth);
 	glUniformMatrix4fv(modelMatrixLoc2, 1, GL_TRUE, modelMatrix.values);
@@ -380,10 +380,10 @@ int main(int argc, char **argv)
 	terrain = terrain_create(NUM_VERTEX_X, NUM_VERTEX_Z, SIDE_LENGTH_X, SIDE_LENGTH_Z, {1, 1, 1});
 	terrain_bind(terrain, vertexPosLoc1, vertexColLoc1, vertexTexcoordLoc1, vertexNormalLoc1);
 
-	earth = sphere_create(0.7, 40, 40, {1, 1, 1});
+	earth = sphere_create(7, 40, 40, {1, 1, 1});
 	sphere_bind(earth, vertexPosLoc2, vertexColLoc2, vertexTexcoordLoc2, vertexNormalLoc2);
 
-	skybox = sphere_create(1000, 400, 400, {1, 1, 1});
+	skybox = sphere_create(1500, 40, 40, {1.2, 1.2, 1.2});
 	sphere_bind(skybox, vertexPosLoc3, vertexColLoc3, vertexTexcoordLoc3, vertexNormalLoc3);
 
 	glClearColor(0, 0, 0, 1.0);
