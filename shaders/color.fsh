@@ -4,9 +4,6 @@ in mat4 modelMatrixToFS;
 in vec4 vertexWorldPosition;
 in vec3 vertexNormalToFS;
 in vec3 vertexColorToFS;
-in vec2 vertexTexcoordToFS;
-
-uniform sampler2D myTexture;
 
 uniform vec3 ambientLight;
 uniform vec3 materialA;
@@ -43,12 +40,12 @@ void main() {
     float d1 = 2;
     float d2 = 7;
     if(cameraToVertexDist <= d1) {
-        pixelColor = vec4(tempColor, 1) * texture(myTexture, vertexTexcoordToFS);
+        pixelColor = vec4(tempColor, 1);
     } else if(cameraToVertexDist <= d2) {
         float fogFactor = (cameraToVertexDist - d1) / (d2 - d1);
-        pixelColor = vec4(tempColor * (1 - fogFactor) + fogColor * fogFactor, 1) * texture(myTexture, vertexTexcoordToFS);
+        pixelColor = vec4(tempColor * (1 - fogFactor) + fogColor * fogFactor, 1);
     } else {
-        pixelColor = vec4(fogColor, 1) * texture(myTexture, vertexTexcoordToFS);
+        pixelColor = vec4(fogColor, 1);
     }
     
 }

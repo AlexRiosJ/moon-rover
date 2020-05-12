@@ -22,7 +22,8 @@ Sphere earth;
 
 unsigned char keys[256];
 
-static GLuint programId, va[1], bufferId[4], vertexPosLoc, vertexColLoc, vertexTexcoordLoc, vertexNormalLoc, modelMatrixLoc, viewMatrixLoc, projMatrixLoc;
+static GLuint programId1, va[1], bufferId[4], vertexPosLoc1, vertexColLoc1, vertexTexcoordLoc1, vertexNormalLoc1, modelMatrixLoc1, viewMatrixLoc1, projMatrixLoc1;
+static GLuint programId2, vertexPosLoc2, vertexColLoc2, vertexTexcoordLoc2, vertexNormalLoc2, modelMatrixLoc2, viewMatrixLoc2, projMatrixLoc2;
 static Mat4 modelMatrix, viewMatrix, projectionMatrix;
 
 static float movex = 0, movey = 0;
@@ -39,7 +40,7 @@ static float materialD[] = {0.7, 0.7, 0.7};
 static float materialS[] = {0.7, 0.7, 0.7};
 static float exponent = 32;
 
-static GLuint textures[1];
+static GLuint textures[2];
 
 static void initTexture(const char *filename, GLuint textureId)
 {
@@ -55,8 +56,9 @@ static void initTexture(const char *filename, GLuint textureId)
 
 static void initTextures()
 {
-	glGenTextures(1, textures);
+	glGenTextures(2, textures);
 	initTexture("textures/earth.bmp", textures[0]);
+	initTexture("textures/earth-clouds.bmp", textures[1]);
 }
 
 static void initShaders()
@@ -68,28 +70,64 @@ static void initShaders()
 	if (!shaderCompiled(fShader))
 		return;
 
-	programId = glCreateProgram();
-	glAttachShader(programId, vShader);
-	glAttachShader(programId, fShader);
-	glLinkProgram(programId);
-	glUseProgram(programId);
+	programId1 = glCreateProgram();
+	glAttachShader(programId1, vShader);
+	glAttachShader(programId1, fShader);
+	glLinkProgram(programId1);
+	glUseProgram(programId1);
 
-	vertexPosLoc = glGetAttribLocation(programId, "vertexPosition");
-	vertexColLoc = glGetAttribLocation(programId, "vertexColor");
-	vertexTexcoordLoc = glGetAttribLocation(programId, "vertexTexcoord");
-	vertexNormalLoc = glGetAttribLocation(programId, "vertexNormal");
-	modelMatrixLoc = glGetUniformLocation(programId, "modelMatrix");
-	viewMatrixLoc = glGetUniformLocation(programId, "viewMatrix");
-	projMatrixLoc = glGetUniformLocation(programId, "projectionMatrix");
+	vertexPosLoc1 = glGetAttribLocation(programId1, "vertexPosition");
+	vertexColLoc1 = glGetAttribLocation(programId1, "vertexColor");
+	vertexNormalLoc1 = glGetAttribLocation(programId1, "vertexNormal");
+	modelMatrixLoc1 = glGetUniformLocation(programId1, "modelMatrix");
+	viewMatrixLoc1 = glGetUniformLocation(programId1, "viewMatrix");
+	projMatrixLoc1 = glGetUniformLocation(programId1, "projectionMatrix");
 
-	ambientLightLoc = glGetUniformLocation(programId, "ambientLight");
-	diffuseLightLoc = glGetUniformLocation(programId, "diffuseLight");
-	lightPositionLoc = glGetUniformLocation(programId, "lightPosition");
-	materialALoc = glGetUniformLocation(programId, "materialA");
-	materialDLoc = glGetUniformLocation(programId, "materialD");
-	materialSLoc = glGetUniformLocation(programId, "materialS");
-	exponentLoc = glGetUniformLocation(programId, "exponent");
-	cameraLoc = glGetUniformLocation(programId, "camera");
+	ambientLightLoc = glGetUniformLocation(programId1, "ambientLight");
+	diffuseLightLoc = glGetUniformLocation(programId1, "diffuseLight");
+	lightPositionLoc = glGetUniformLocation(programId1, "lightPosition");
+	materialALoc = glGetUniformLocation(programId1, "materialA");
+	materialDLoc = glGetUniformLocation(programId1, "materialD");
+	materialSLoc = glGetUniformLocation(programId1, "materialS");
+	exponentLoc = glGetUniformLocation(programId1, "exponent");
+	cameraLoc = glGetUniformLocation(programId1, "camera");
+
+	glUniform3fv(ambientLightLoc, 1, ambientLight);
+	glUniform3fv(diffuseLightLoc, 1, diffuseLight);
+	glUniform3fv(lightPositionLoc, 1, lightPosition);
+	glUniform3fv(materialALoc, 1, materialA);
+	glUniform3fv(materialDLoc, 1, materialD);
+	glUniform3fv(materialSLoc, 1, materialS);
+	glUniform1f(exponentLoc, exponent);
+
+	GLuint vShader2 = compileShader("shaders/earth.vsh", GL_VERTEX_SHADER);
+	if (!shaderCompiled(vShader2))
+		return;
+	GLuint fShader2 = compileShader("shaders/earth.fsh", GL_FRAGMENT_SHADER);
+	if (!shaderCompiled(fShader2))
+		return;
+	programId2 = glCreateProgram();
+	glAttachShader(programId2, vShader2);
+	glAttachShader(programId2, fShader2);
+	glLinkProgram(programId2);
+	glUseProgram(programId2);
+
+	vertexPosLoc2 = glGetAttribLocation(programId2, "vertexPosition");
+	vertexColLoc2 = glGetAttribLocation(programId2, "vertexColor");
+	vertexTexcoordLoc2 = glGetAttribLocation(programId2, "vertexTexcoord");
+	vertexNormalLoc2 = glGetAttribLocation(programId2, "vertexNormal");
+	modelMatrixLoc2 = glGetUniformLocation(programId2, "modelMatrix");
+	viewMatrixLoc2 = glGetUniformLocation(programId2, "viewMatrix");
+	projMatrixLoc2 = glGetUniformLocation(programId2, "projectionMatrix");
+
+	ambientLightLoc = glGetUniformLocation(programId2, "ambientLight");
+	diffuseLightLoc = glGetUniformLocation(programId2, "diffuseLight");
+	lightPositionLoc = glGetUniformLocation(programId2, "lightPosition");
+	materialALoc = glGetUniformLocation(programId2, "materialA");
+	materialDLoc = glGetUniformLocation(programId2, "materialD");
+	materialSLoc = glGetUniformLocation(programId2, "materialS");
+	exponentLoc = glGetUniformLocation(programId2, "exponent");
+	cameraLoc = glGetUniformLocation(programId2, "camera");
 
 	glUniform3fv(ambientLightLoc, 1, ambientLight);
 	glUniform3fv(diffuseLightLoc, 1, diffuseLight);
@@ -196,18 +234,18 @@ static void generateTerrain()
 
 	glBindBuffer(GL_ARRAY_BUFFER, bufferId[0]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * NUM_VERTEX_X * NUM_VERTEX_Z, vertexes, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(vertexPosLoc);
-	glVertexAttribPointer(vertexPosLoc, 3, GL_FLOAT, 0, 0, 0);
+	glEnableVertexAttribArray(vertexPosLoc1);
+	glVertexAttribPointer(vertexPosLoc1, 3, GL_FLOAT, 0, 0, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, bufferId[1]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * NUM_VERTEX_X * NUM_VERTEX_Z, colors, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(vertexColLoc);
-	glVertexAttribPointer(vertexColLoc, 3, GL_FLOAT, 0, 0, 0);
+	glEnableVertexAttribArray(vertexColLoc1);
+	glVertexAttribPointer(vertexColLoc1, 3, GL_FLOAT, 0, 0, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, bufferId[2]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * NUM_VERTEX_X * NUM_VERTEX_Z, normals, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(vertexNormalLoc);
-	glVertexAttribPointer(vertexNormalLoc, 3, GL_FLOAT, 0, 0, 0);
+	glEnableVertexAttribArray(vertexNormalLoc1);
+	glVertexAttribPointer(vertexNormalLoc1, 3, GL_FLOAT, 0, 0, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, bufferId[3]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(GLuint) * (NUM_VERTEX_X - 1) * (NUM_VERTEX_Z * 2 + 1), indexBuffer, GL_STATIC_DRAW);
@@ -258,7 +296,7 @@ static void drawTerrain(int offsetX, int offsetZ)
 		{
 			mIdentity(&modelMatrix);
 			translate(&modelMatrix, (i + offsetX) * SIDE_LENGTH_X, 0, (j + offsetZ) * SIDE_LENGTH_Z);
-			glUniformMatrix4fv(modelMatrixLoc, 1, GL_TRUE, modelMatrix.values);
+			glUniformMatrix4fv(modelMatrixLoc1, 1, GL_TRUE, modelMatrix.values);
 			glBindVertexArray(va[0]);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferId[3]);
 			glDrawElements(GL_TRIANGLE_STRIP, (NUM_VERTEX_X - 1) * (NUM_VERTEX_Z * 2 + 1), GL_UNSIGNED_INT, 0);
@@ -268,28 +306,55 @@ static void drawTerrain(int offsetX, int offsetZ)
 
 static void display()
 {
-	mIdentity(&modelMatrix);
-	mIdentity(&viewMatrix);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glUseProgram(programId);
 
 	move();
-	glUniform3f(cameraLoc, cameraPosition.x, cameraPosition.y, cameraPosition.z);
 
+	// MVP al shader 1
+	glUseProgram(programId1);
+	glUniformMatrix4fv(projMatrixLoc1, 1, GL_TRUE, projectionMatrix.values);
+	mIdentity(&viewMatrix);
+	glUniform3f(cameraLoc, cameraPosition.x, cameraPosition.y, cameraPosition.z);
 	rotateX(&viewMatrix, movey * 0.08);
 	rotateY(&viewMatrix, movex * 0.08);
 	translate(&viewMatrix, -cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
-	glUniformMatrix4fv(viewMatrixLoc, 1, GL_TRUE, viewMatrix.values);
+	glUniformMatrix4fv(viewMatrixLoc1, 1, GL_TRUE, viewMatrix.values);
+
+	// Dibujar terreno
+	mIdentity(&modelMatrix);
+	glUniformMatrix4fv(modelMatrixLoc1, 1, GL_TRUE, modelMatrix.values);
+	drawTerrain(cameraPosition.x / SIDE_LENGTH_X, cameraPosition.z / SIDE_LENGTH_Z);
+
+	// MVP al shader 2 (earth)
+	glUseProgram(programId2);
+	glUniformMatrix4fv(projMatrixLoc2, 1, GL_TRUE, projectionMatrix.values);
+	mIdentity(&viewMatrix);
+	glUniform3f(cameraLoc, cameraPosition.x, cameraPosition.y, cameraPosition.z);
+	rotateX(&viewMatrix, movey * 0.08);
+	rotateY(&viewMatrix, movex * 0.08);
+	translate(&viewMatrix, -cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
+	glUniformMatrix4fv(viewMatrixLoc2, 1, GL_TRUE, viewMatrix.values);
+
+	// Dibujar Earth
+	mIdentity(&modelMatrix);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glActiveTexture(GL_TEXTURE0);
+	glUniform1i(glGetUniformLocation(programId2, "texture0"), 0);
+	glBindTexture(GL_TEXTURE_2D, textures[0]);
+
+	glEnable(GL_BLEND);
+	glActiveTexture(GL_TEXTURE1);
+	glUniform1i(glGetUniformLocation(programId2, "texture1"), 1);
+	glBindTexture(GL_TEXTURE_2D, textures[1]);
 
 	static float angleEarth = -45;
 
-	translate(&modelMatrix, cameraPosition.x + 2, 2, cameraPosition.z + 2);
+	translate(&modelMatrix, cameraPosition.x + 5, 4, cameraPosition.z + 5);
 	rotateX(&modelMatrix, 23.5);
 	rotateZ(&modelMatrix, -angleEarth);
-	glUniformMatrix4fv(modelMatrixLoc, 1, GL_TRUE, modelMatrix.values);
+	glUniformMatrix4fv(modelMatrixLoc2, 1, GL_TRUE, modelMatrix.values);
 	sphere_draw(earth);
-
-	drawTerrain(cameraPosition.x / SIDE_LENGTH_X, cameraPosition.z / SIDE_LENGTH_Z);
 
 	angleEarth += 0.08;
 	if (angleEarth >= 360.0)
@@ -309,7 +374,8 @@ static void reshapeFunc(int w, int h)
 	glViewport(0, 0, w, h);
 	float aspect = (float)w / h;
 	setPerspective(&projectionMatrix, 70, aspect, -0.05, -2000);
-	glUniformMatrix4fv(projMatrixLoc, 1, GL_TRUE, projectionMatrix.values);
+	glUniformMatrix4fv(projMatrixLoc1, 1, GL_TRUE, projectionMatrix.values);
+	glUniformMatrix4fv(projMatrixLoc2, 1, GL_TRUE, projectionMatrix.values);
 }
 
 static void exitFunc(unsigned char key, int x, int y)
@@ -368,8 +434,8 @@ int main(int argc, char **argv)
 	initTextures();
 	initShaders();
 
-	earth = sphere_create(0.25, 40, 40, {2.5, 2.5, 2.5});
-	sphere_bind(earth, vertexPosLoc, vertexColLoc, vertexTexcoordLoc, vertexNormalLoc);
+	earth = sphere_create(0.7, 40, 40, {1, 1, 1});
+	sphere_bind(earth, vertexPosLoc2, vertexColLoc2, vertexTexcoordLoc2, vertexNormalLoc2);
 
 	generateTerrain();
 	glClearColor(0, 0, 0, 1.0);
