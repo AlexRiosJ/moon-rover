@@ -22,6 +22,8 @@ class Rover
         float angleX;
         float angleY;
         float angleZ;
+
+        float wheelAngle;
          
         // Wheels offsets.
         float wheelsBackOffsetZ;
@@ -41,12 +43,15 @@ class Rover
         float y;
         float z;
 
+        float wheelRotation;
+        float currentDirection;
+        float currentDirectionAnimation;
     public:
         Rover();
         ~Rover();
-        void Load();
-        void Bind(GLuint, GLuint, GLuint, GLuint);
-        void Draw(GLuint);
+        void load();
+        void bind(GLuint, GLuint, GLuint, GLuint);
+        void draw(GLuint);
 
         void getWheelLeftBackXZPosition(float *);
         void getWheelLeftMidXZPosition(float *);
@@ -55,4 +60,7 @@ class Rover
         void getWheelRightBackXZPosition(float *);
         void getWheelRightMidXZPosition(float *);
         void getWheelRightFrontXZPosition(float *);
+
+        void rotateWheels(int);
+        void setDirection(float);
 };

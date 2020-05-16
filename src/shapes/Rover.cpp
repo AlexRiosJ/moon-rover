@@ -13,6 +13,10 @@ Rover::Rover()
 	this->y = 0.0;
 	this->z = 0.0;
 
+	this->wheelAngle = 0;
+	this->currentDirection = 0;
+	this->currentDirectionAnimation = 0;
+
 	// Wheels X offsets
 	this->wheelLeftMidOffsetX = 0.3005;
 	this->wheelRightMidOffsetX = -0.3005;
@@ -31,7 +35,7 @@ Rover::~Rover()
 {
 }
 
-void Rover::Load()
+void Rover::load()
 {
 	this->chasis.Load("./meshes/body.obj");
 	this->rockerLeft.Load("./meshes/rocker.obj");
@@ -50,7 +54,7 @@ void Rover::Load()
 	this->wheelRightBack.Load("./meshes/wheel_m.obj");
 }
 
-void Rover::Bind(GLuint programId, GLuint vertexLocation, GLuint normalLocation, GLuint colorLocation)
+void Rover::bind(GLuint programId, GLuint vertexLocation, GLuint normalLocation, GLuint colorLocation)
 {
 	this->chasis.Bind(programId, vertexLocation, normalLocation, colorLocation);
 	this->rockerLeft.Bind(programId, vertexLocation, normalLocation, colorLocation);
@@ -69,16 +73,16 @@ void Rover::Bind(GLuint programId, GLuint vertexLocation, GLuint normalLocation,
 	this->wheelRightBack.Bind(programId, vertexLocation, normalLocation, colorLocation);
 }
 
-void Rover::Draw(GLuint modelLoc)
+void Rover::draw(GLuint modelLoc)
 {
 	Mat4 modelMatrix;
 
 	mIdentity(&modelMatrix);
 	translate(&modelMatrix, 0, 0, -0.8);
 
-	rotateX(&modelMatrix, this->angleX -= 0.2);
-	rotateY(&modelMatrix, this->angleY -= 0.2);
-	rotateZ(&modelMatrix, this->angleZ -= 0.2);
+	//rotateX(&modelMatrix, this->angleX -= 0.2);
+	//rotateY(&modelMatrix, this->angleY -= 0.2);
+	//rotateZ(&modelMatrix, this->angleZ -= 0.2);
 
 	pushMatrix(&modelMatrix);
 
@@ -97,24 +101,29 @@ void Rover::Draw(GLuint modelLoc)
 
 	pushMatrix(&modelMatrix);
 	translate(&modelMatrix, 0.1196, -0.09744, 0.10717);
+	rotateX(&modelMatrix, this->wheelAngle);
 	glUniformMatrix4fv(modelLoc, 1, 1, modelMatrix.values);
 	wheelLeftMid.Draw();
 
 	popMatrix(&modelMatrix);
 	translate(&modelMatrix, 0.0791, -0.09844, -0.14783);
+	rotateY(&modelMatrix, -currentDirectionAnimation);
 	glUniformMatrix4fv(modelLoc, 1, 1, modelMatrix.values);
 	driveLeftBack.Draw();
 
 	translate(&modelMatrix, 0.01, 0.0, 0.0);
+	rotateX(&modelMatrix, this->wheelAngle);
 	glUniformMatrix4fv(modelLoc, 1, 1, modelMatrix.values);
 	wheelLeftBack.Draw();
 
 	popMatrix(&modelMatrix);
 	translate(&modelMatrix, 0.1038, -0.16007, 0.2101);
+	rotateY(&modelMatrix, currentDirectionAnimation);
 	glUniformMatrix4fv(modelLoc, 1, 1, modelMatrix.values);
 	driveLeftFront.Draw();
 
 	translate(&modelMatrix, 0.01, 0.0, 0.0);
+	rotateX(&modelMatrix, this->wheelAngle);
 	glUniformMatrix4fv(modelLoc, 1, 1, modelMatrix.values);
 	wheelLeftFront.Draw();
 
@@ -131,24 +140,29 @@ void Rover::Draw(GLuint modelLoc)
 
 	pushMatrix(&modelMatrix);
 	translate(&modelMatrix, -0.1196, -0.09744, 0.10717);
+	rotateX(&modelMatrix, this->wheelAngle);
 	glUniformMatrix4fv(modelLoc, 1, 1, modelMatrix.values);
 	wheelRightMid.Draw();
 
 	popMatrix(&modelMatrix);
 	translate(&modelMatrix, -0.0791, -0.09844, -0.14783);
+	rotateY(&modelMatrix, -currentDirectionAnimation);
 	glUniformMatrix4fv(modelLoc, 1, 1, modelMatrix.values);
 	driveRightBack.Draw();
 
 	translate(&modelMatrix, -0.01, 0.0, 0.0);
+	rotateX(&modelMatrix, this->wheelAngle);
 	glUniformMatrix4fv(modelLoc, 1, 1, modelMatrix.values);
 	wheelRightBack.Draw();
 
 	popMatrix(&modelMatrix);
 	translate(&modelMatrix, -0.1038, -0.16007, 0.2101);
+	rotateY(&modelMatrix, currentDirectionAnimation);
 	glUniformMatrix4fv(modelLoc, 1, 1, modelMatrix.values);
 	driveRightFront.Draw();
 
 	translate(&modelMatrix, -0.01, 0.0, 0.0);
+	rotateX(&modelMatrix, this->wheelAngle);
 	glUniformMatrix4fv(modelLoc, 1, 1, modelMatrix.values);
 	wheelRightFront.Draw();
 }
@@ -187,4 +201,23 @@ void Rover::getWheelRightFrontXZPosition(float *coord)
 {
 	coord[0] = this->x + this->wheelRightFrontOffsetX;
 	coord[1] = this->z + this->wheelsFrontOffsetZ;
+}
+
+void Rover::rotateWheels(int forward)
+{
+	float direction = forward ? 1.0 : -1.0;
+	this->wheelAngle += 1.5 * direction;
+	if(this->wheelAngle >= 360.0)
+	{
+		this->wheelAngle = 0.0;
+	}
+}
+
+void Rover::setDirection(float angle)
+{
+	if(this->currentDirectionAnimation >= angle) 
+		return;
+	float dt = (angle) / 100.0;
+	this->currentDirectionAnimation += dt;
+	std::cout << this->currentDirectionAnimation << "\n";
 }

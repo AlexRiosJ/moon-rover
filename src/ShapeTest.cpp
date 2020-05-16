@@ -97,7 +97,9 @@ static void displayFunc()
 	mIdentity(&viewMatrix);
 	glUniformMatrix4fv(viewMatrixLoc, 1, 1, viewMatrix.values);
 
-	r.Draw(modelMatrixLoc);
+	r.rotateWheels(1);
+	r.setDirection(-40);
+	r.draw(modelMatrixLoc);
 
 	glUniformMatrix4fv(viewMatrixLoc, 1, 1, viewMatrix.values);
 	// emptyStack();
@@ -123,8 +125,8 @@ int main(int argc, char **argv)
 	glEnable(GL_CULL_FACE);
 	initShaders();
 
-	r.Load();
-	r.Bind(programId1, vertexPositionLoc, vertexNormalLoc, vertexColorLoc);
+	r.load();
+	r.bind(programId1, vertexPositionLoc, vertexNormalLoc, vertexColorLoc);
 
 	glClearColor(0.3, 0.3, 0.3, 1.0);
 	glutMainLoop();

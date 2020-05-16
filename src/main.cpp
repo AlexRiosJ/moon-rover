@@ -365,9 +365,9 @@ int main(int argc, char **argv)
 	glutTimerFunc(50, timerFunc, 1);
 
 	glutCreateWindow("Moon Rover");
-	glutFullScreen();
+	// glutFullScreen();
 	glutSetCursor(GLUT_CURSOR_CROSSHAIR);
-	glutPassiveMotionFunc(mouseMove);
+	// glutPassiveMotionFunc(mouseMove);
 	glutMotionFunc(mouseMove);
 	glutDisplayFunc(display);
 	glutKeyboardFunc(keyPressed);
