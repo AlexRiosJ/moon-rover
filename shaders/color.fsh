@@ -6,7 +6,7 @@ in vec3 vertexNormalToFS;
 in vec3 vertexColorToFS;
 in vec2 vertexTexcoordToFS;
 
-uniform sampler2D texture2;
+uniform sampler2D moonTexture;
 
 uniform vec3 ambientLight;
 uniform vec3 materialA;
@@ -43,12 +43,12 @@ void main() {
     float d1 = 1;
     float d2 = 4;
     if(cameraToVertexDist <= d1) {
-        pixelColor = vec4(tempColor, 1) * texture(texture2, vertexTexcoordToFS);
+        pixelColor = vec4(tempColor, 1) * texture(moonTexture, vertexTexcoordToFS);
     } else if(cameraToVertexDist <= d2) {
         float fogFactor = (cameraToVertexDist - d1) / (d2 - d1);
-        pixelColor = vec4(tempColor * (1 - fogFactor) + fogColor * fogFactor, 1) * texture(texture2, vertexTexcoordToFS);
+        pixelColor = vec4(tempColor * (1 - fogFactor) + fogColor * fogFactor, 1) * texture(moonTexture, vertexTexcoordToFS);
     } else {
-        pixelColor = vec4(fogColor, 1) * texture(texture2, vertexTexcoordToFS);
+        pixelColor = vec4(fogColor, 1) * texture(moonTexture, vertexTexcoordToFS);
     }
     
 }

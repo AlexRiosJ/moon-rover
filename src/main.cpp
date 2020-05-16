@@ -29,6 +29,8 @@ static GLuint programId2, vertexPosLoc2, vertexColLoc2, vertexTexcoordLoc2, vert
 static GLuint programId3, vertexPosLoc3, vertexColLoc3, vertexTexcoordLoc3, vertexNormalLoc3, modelMatrixLoc3, viewMatrixLoc3, projMatrixLoc3;
 static Mat4 modelMatrix, viewMatrix, projectionMatrix;
 
+static GLuint texturesLocs[5];
+
 static float movex = 0, movey = 0;
 Vertex cameraPosition = {0, 1.5, 0};
 float cameraSpeed = 0.05;
@@ -67,11 +69,30 @@ static void initTexture(const char *filename, GLuint textureId)
 
 static void initTextures()
 {
-	glGenTextures(4, textures);
+	glGenTextures(5, textures);
 	initTexture("textures/moon-sand.bmp", textures[0]);
 	initTexture("textures/earth.bmp", textures[1]);
 	initTexture("textures/earth-clouds.bmp", textures[2]);
-	initTexture("textures/skybox.bmp", textures[3]);
+	initTexture("textures/earth-specular.bmp", textures[3]);
+	initTexture("textures/skybox.bmp", textures[4]);
+}
+
+static void setupTextures()
+{
+	texturesLocs[0] = glGetUniformLocation(programId1, "moonTexture");
+	texturesLocs[1] = glGetUniformLocation(programId2, "earthTexture");
+	texturesLocs[2] = glGetUniformLocation(programId2, "earthCloudsTexture");
+	texturesLocs[3] = glGetUniformLocation(programId2, "earthSpecularTexture");
+	texturesLocs[4] = glGetUniformLocation(programId3, "skyboxTexture");
+
+	glUseProgram(programId1);
+	glUniform1i(texturesLocs[0], textures[0]);
+	glUseProgram(programId2);
+	glUniform1i(texturesLocs[1], textures[1]);
+	glUniform1i(texturesLocs[2], textures[2]);
+	glUniform1i(texturesLocs[3], textures[3]);
+	glUseProgram(programId3);
+	glUniform1i(texturesLocs[4], textures[4]);
 }
 
 static void initShaders()
@@ -171,6 +192,9 @@ static void initShaders()
 	viewMatrixLoc3 = glGetUniformLocation(programId3, "viewMatrix");
 	projMatrixLoc3 = glGetUniformLocation(programId3, "projectionMatrix");
 
+	// Setup textures
+	setupTextures();
+
 	glEnable(GL_DEPTH_TEST);
 	//	glEnable(GL_CULL_FACE);
 	//	glFrontFace(GL_CW);
@@ -243,8 +267,8 @@ static void display()
 
 	// Dibujar terreno
 	mIdentity(&modelMatrix);
-	glActiveTexture(GL_TEXTURE0);
-	glUniform1i(glGetUniformLocation(programId1, "texture0"), 0);
+	glActiveTexture(GL_TEXTURE0 + 0);
+	glUniform1i(texturesLocs[0], 0);
 	glBindTexture(GL_TEXTURE_2D, textures[0]);
 	drawTerrain(cameraPosition.x / SIDE_LENGTH_X, cameraPosition.z / SIDE_LENGTH_Z);
 
@@ -261,14 +285,16 @@ static void display()
 	// Dibujar Earth
 	mIdentity(&modelMatrix);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	glActiveTexture(GL_TEXTURE1);
-	glUniform1i(glGetUniformLocation(programId2, "texture1"), 1);
+	glActiveTexture(GL_TEXTURE0 + 1);
+	glUniform1i(texturesLocs[1], 1);
 	glBindTexture(GL_TEXTURE_2D, textures[1]);
 
 	glEnable(GL_BLEND);
-	glActiveTexture(GL_TEXTURE2);
-	glUniform1i(glGetUniformLocation(programId2, "texture2"), 2);
+	glActiveTexture(GL_TEXTURE0 + 3);
+	glUniform1i(texturesLocs[3], 3);
+	glBindTexture(GL_TEXTURE_2D, textures[3]);
+	glActiveTexture(GL_TEXTURE0 + 2);
+	glUniform1i(texturesLocs[2], 2);
 	glBindTexture(GL_TEXTURE_2D, textures[2]);
 	glDisable(GL_BLEND);
 
@@ -292,9 +318,9 @@ static void display()
 	glUniformMatrix4fv(viewMatrixLoc3, 1, GL_TRUE, viewMatrix.values);
 
 	mIdentity(&modelMatrix);
-	glActiveTexture(GL_TEXTURE0);
-	glUniform1i(glGetUniformLocation(programId3, "texture3"), 3);
-	glBindTexture(GL_TEXTURE_2D, textures[3]);
+	glActiveTexture(GL_TEXTURE0 + 4);
+	glUniform1i(texturesLocs[4], 4);
+	glBindTexture(GL_TEXTURE_2D, textures[4]);
 	translate(&modelMatrix, cameraPosition.x, 0, cameraPosition.z);
 	rotateX(&modelMatrix, 180);
 	rotateZ(&modelMatrix, -angleSkybox);

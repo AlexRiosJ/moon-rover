@@ -15,6 +15,7 @@ out vec3 vertexNormalToFS;
 out vec3 vertexColorToFS;
 out vec2 vertexTexcoordToFS1;
 out vec2 vertexTexcoordToFS2;
+out vec2 vertexTexcoordToFS3;
 
 void main() {
     vec4 worldPosition = modelMatrix * vec4(vertexPosition, 1);
@@ -26,4 +27,5 @@ void main() {
     vertexColorToFS = vertexColor;
     vertexTexcoordToFS1 = vertexTexcoord;
     vertexTexcoordToFS2 = vertexTexcoord;
+    vertexTexcoordToFS3 = vertexTexcoord;
 }
