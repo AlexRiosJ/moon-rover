@@ -10,7 +10,7 @@
 #endif
 #define RESET 0xFFFFFFFF
 
-Vertex hueToRgb(int hue);
+Vertex hueToRgb(float H);
 
 struct strTerrain
 {

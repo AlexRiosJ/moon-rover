@@ -366,6 +366,7 @@ int main(int argc, char **argv)
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE);
 	// Activate MSAA (Multisample Antialiasing)
+	// SRC: http://bankslab.berkeley.edu/members/chris/AntiAliasing/AntiAliasingInOpenGL.html
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_MULTISAMPLE);
 	glEnable(GL_MULTISAMPLE);
 	glHint(GL_MULTISAMPLE_FILTER_HINT_NV, GL_NICEST);
