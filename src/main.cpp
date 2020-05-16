@@ -365,6 +365,10 @@ int main(int argc, char **argv)
 	setbuf(stdout, NULL);
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE);
+	// Activate MSAA (Multisample Antialiasing)
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_MULTISAMPLE);
+	glEnable(GL_MULTISAMPLE);
+	glHint(GL_MULTISAMPLE_FILTER_HINT_NV, GL_NICEST);
 	glutInitWindowSize(1280, 720);
 	glutInitWindowPosition(100, 100);
 	glutTimerFunc(50, timerFunc, 1);
