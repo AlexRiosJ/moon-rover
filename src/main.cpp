@@ -273,6 +273,7 @@ static void display()
 	glDisable(GL_BLEND);
 
 	static float angleEarth = -45;
+	static float angleSkybox = -45;
 
 	translate(&modelMatrix, cameraPosition.x + 50, 20, cameraPosition.z + 50);
 	rotateX(&modelMatrix, 23.5);
@@ -294,15 +295,19 @@ static void display()
 	glActiveTexture(GL_TEXTURE0);
 	glUniform1i(glGetUniformLocation(programId3, "texture3"), 3);
 	glBindTexture(GL_TEXTURE_2D, textures[3]);
-	rotateX(&modelMatrix, 180);
-	rotateZ(&modelMatrix, -angleEarth * 0.1);
 	translate(&modelMatrix, cameraPosition.x, 0, cameraPosition.z);
+	rotateX(&modelMatrix, 180);
+	rotateZ(&modelMatrix, -angleSkybox);
 	glUniformMatrix4fv(modelMatrixLoc3, 1, GL_TRUE, modelMatrix.values);
 	sphere_draw(skybox);
 
 	angleEarth += 0.08;
 	if (angleEarth >= 360.0)
 		angleEarth -= 360.0;
+
+	angleSkybox += 0.008;
+	if (angleSkybox >= 360.0)
+		angleSkybox -= 360.0;
 
 	glutSwapBuffers();
 }

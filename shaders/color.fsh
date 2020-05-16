@@ -40,8 +40,8 @@ void main() {
 
     vec3 fogColor = vec3(0, 0, 0);
     float cameraToVertexDist = length(vertexWorldPosition.xz - camera.xz);
-    float d1 = 2;
-    float d2 = 7;
+    float d1 = 1;
+    float d2 = 4;
     if(cameraToVertexDist <= d1) {
         pixelColor = vec4(tempColor, 1) * texture(texture2, vertexTexcoordToFS);
     } else if(cameraToVertexDist <= d2) {
