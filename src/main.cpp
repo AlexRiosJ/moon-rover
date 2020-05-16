@@ -18,20 +18,36 @@
 #define SIDE_LENGTH_X 20
 #define SIDE_LENGTH_Z 20
 
-Sphere earth;
+Sphere earth, sphereRover;
 Terrain terrain;
 Sphere skybox;
 
+typedef enum {
+	LEFT, MIDDLE, RIGHT, FRONT_WHEEL, BACK_WHEEL
+}MouseButton;
+
 unsigned char keys[256];
+bool mouseButtonsClicked[5] = {};
 
 static GLuint programId1, vertexPosLoc1, vertexColLoc1, vertexTexcoordLoc1, vertexNormalLoc1, modelMatrixLoc1, viewMatrixLoc1, projMatrixLoc1;
 static GLuint programId2, vertexPosLoc2, vertexColLoc2, vertexTexcoordLoc2, vertexNormalLoc2, modelMatrixLoc2, viewMatrixLoc2, projMatrixLoc2;
 static GLuint programId3, vertexPosLoc3, vertexColLoc3, vertexTexcoordLoc3, vertexNormalLoc3, modelMatrixLoc3, viewMatrixLoc3, projMatrixLoc3;
 static Mat4 modelMatrix, viewMatrix, projectionMatrix;
 
-static float movex = 0, movey = 0;
-Vertex cameraPosition = {0, 1.5, 0};
+
+
+Vertex cameraPosition = {0, 1.5, 1.0};
+float cameraPitch = (0 / 0.08);
+float cameraYaw = 0;
+float cameraRoll;
 float cameraSpeed = 0.05;
+float distanceFromPlayer = 2-5;
+float angleAroundPlayer = 0.0;
+
+Vertex thirdPersonObj = {0, 1, -1.0};
+float objectRotation = 0.0; // object yaw
+float objectSpeed = 0.05;
+
 
 static GLuint ambientLightLoc, diffuseLightLoc, lightPositionLoc, materialALoc, materialDLoc, materialSLoc, exponentLoc, cameraLoc;
 
@@ -44,6 +60,8 @@ static float materialS[] = {0.7, 0.7, 0.7};
 static float exponent = 32;
 
 static GLuint textures[4];
+
+void calculateCameraPosition();
 
 static void initTexture(const char *filename, GLuint textureId)
 {
@@ -180,32 +198,40 @@ static void move()
 {
 	cameraSpeed = keys[32] ? 0.1 : 0.05; // If space bar is pressed duplicate speed
 
-	float nextForwardXPosition = cameraSpeed * -sin(toRadians(movex * 0.08));
-	float nextForwardYPosition = cameraSpeed * sin(toRadians(movey * 0.08));
-	float nextForwardZPosition = cameraSpeed * cos(toRadians(movex * 0.08));
+	float nextForwardXPosition = cameraSpeed * -sin(toRadians(cameraYaw));
+	float nextForwardYPosition = cameraSpeed * sin(toRadians(cameraPitch));
+	float nextForwardZPosition = cameraSpeed * cos(toRadians(cameraYaw));
 
-	float nextSideXPosition = cameraSpeed * -cos(toRadians(movex * 0.08));
-	float nextSideZPosition = cameraSpeed * -sin(toRadians(movex * 0.08));
+	float nextSideXPosition = cameraSpeed * -cos(toRadians(cameraYaw));
+	float nextSideZPosition = cameraSpeed * -sin(toRadians(cameraYaw));
 
 	if (keys['w'])
 	{
+		thirdPersonObj.z -= objectSpeed;
+
 		cameraPosition.x -= nextForwardXPosition;
 		cameraPosition.y -= nextForwardYPosition;
 		cameraPosition.z -= nextForwardZPosition;
 	}
 	if (keys['s'])
 	{
+		thirdPersonObj.z += objectSpeed;
+
 		cameraPosition.x += nextForwardXPosition;
 		cameraPosition.y += nextForwardYPosition;
 		cameraPosition.z += nextForwardZPosition;
 	}
 	if (keys['a'])
 	{
+		thirdPersonObj.x -= objectSpeed;
+
 		cameraPosition.x += nextSideXPosition;
 		cameraPosition.z += nextSideZPosition;
 	}
 	if (keys['d'])
 	{
+		thirdPersonObj.x += objectSpeed;
+
 		cameraPosition.x -= nextSideXPosition;
 		cameraPosition.z -= nextSideZPosition;
 	}
@@ -229,43 +255,55 @@ static void display()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	calculateCameraPosition();
 	move();
 
-	// MVP al shader 1
+	// ----------------- MVP to shader 1
 	glUseProgram(programId1);
 	glUniformMatrix4fv(projMatrixLoc1, 1, GL_TRUE, projectionMatrix.values);
 	mIdentity(&viewMatrix);
 	glUniform3f(cameraLoc, cameraPosition.x, cameraPosition.y, cameraPosition.z);
-	rotateX(&viewMatrix, movey * 0.08);
-	rotateY(&viewMatrix, movex * 0.08);
+	rotateX(&viewMatrix, -cameraPitch);
+	rotateY(&viewMatrix, -cameraYaw);
 	translate(&viewMatrix, -cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
 	glUniformMatrix4fv(viewMatrixLoc1, 1, GL_TRUE, viewMatrix.values);
 
-	// Dibujar terreno
+	// Draw Terrain
 	mIdentity(&modelMatrix);
 	glActiveTexture(GL_TEXTURE0);
 	glUniform1i(glGetUniformLocation(programId1, "texture0"), 0);
-	glBindTexture(GL_TEXTURE_2D, textures[0]);
+	glBindTexture(GL_TEXTURE_2D, textures[0]);	// Add sand texture
 	drawTerrain(cameraPosition.x / SIDE_LENGTH_X, cameraPosition.z / SIDE_LENGTH_Z);
 
-	// MVP al shader 2 (earth)
+	// TO DO deactivite textures
+	
+	// Draw an object to build third person view from it
+	mIdentity(&modelMatrix);
+	translate(&modelMatrix, thirdPersonObj.x, thirdPersonObj.y, thirdPersonObj.z);
+	glUniformMatrix4fv(modelMatrixLoc1, 1, GL_TRUE, modelMatrix.values);
+	sphere_draw(sphereRover);
+
+
+	// ---------------- MVP to shader 2 (earth)
 	glUseProgram(programId2);
 	glUniformMatrix4fv(projMatrixLoc2, 1, GL_TRUE, projectionMatrix.values);
 	mIdentity(&viewMatrix);
 	glUniform3f(cameraLoc, cameraPosition.x, cameraPosition.y, cameraPosition.z);
-	rotateX(&viewMatrix, movey * 0.08);
-	rotateY(&viewMatrix, movex * 0.08);
+	rotateX(&viewMatrix, -cameraPitch);
+	rotateY(&viewMatrix, -cameraYaw);
 	translate(&viewMatrix, -cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
 	glUniformMatrix4fv(viewMatrixLoc2, 1, GL_TRUE, viewMatrix.values);
 
-	// Dibujar Earth
+	// Draw Earth
 	mIdentity(&modelMatrix);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	// Apply continental texture
 	glActiveTexture(GL_TEXTURE1);
 	glUniform1i(glGetUniformLocation(programId2, "texture1"), 1);
 	glBindTexture(GL_TEXTURE_2D, textures[1]);
 
+	// Apply clouds texture
 	glEnable(GL_BLEND);
 	glActiveTexture(GL_TEXTURE2);
 	glUniform1i(glGetUniformLocation(programId2, "texture2"), 2);
@@ -276,18 +314,19 @@ static void display()
 	static float angleSkybox = -45;
 
 	translate(&modelMatrix, cameraPosition.x + 50, 20, cameraPosition.z + 50);
-	rotateX(&modelMatrix, 23.5);
+	rotateX(&modelMatrix, 23.5); // 23° It's the approximate inclination of the Earth
 	rotateZ(&modelMatrix, -angleEarth);
 	glUniformMatrix4fv(modelMatrixLoc2, 1, GL_TRUE, modelMatrix.values);
 	sphere_draw(earth);
 
-	// MVP al shader 3 (skybox)
+
+	// ------------ MVP to shader 3 (skybox)
 	glUseProgram(programId3);
 	glUniformMatrix4fv(projMatrixLoc3, 1, GL_TRUE, projectionMatrix.values);
 	mIdentity(&viewMatrix);
 	glUniform3f(cameraLoc, cameraPosition.x, cameraPosition.y, cameraPosition.z);
-	rotateX(&viewMatrix, movey * 0.08);
-	rotateY(&viewMatrix, movex * 0.08);
+	rotateX(&viewMatrix, -cameraPitch);
+	rotateY(&viewMatrix, -cameraYaw);
 	translate(&viewMatrix, -cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
 	glUniformMatrix4fv(viewMatrixLoc3, 1, GL_TRUE, viewMatrix.values);
 
@@ -309,7 +348,7 @@ static void display()
 	if (angleSkybox >= 360.0)
 		angleSkybox -= 360.0;
 
-	glutSwapBuffers();
+	glutSwapBuffers(); 	  
 }
 
 static void timerFunc(int id)
@@ -339,8 +378,9 @@ static void keyPressed(unsigned char key, int x, int y)
 {
 	if (key == 27)
 		exit(0);
-	else
+	else {
 		keys[key] = 1;
+	}
 }
 
 static void keyReleased(unsigned char key, int x, int y)
@@ -350,14 +390,88 @@ static void keyReleased(unsigned char key, int x, int y)
 
 void rotateCamera(int x, int y)
 {
-	movex += (float)(x - glutGet(GLUT_WINDOW_WIDTH) / 2);
-	movey += (float)(y - glutGet(GLUT_WINDOW_HEIGHT) / 2);
+	cameraYaw += (float)(x - glutGet(GLUT_WINDOW_WIDTH) / 2);
+	cameraPitch += (float)(y - glutGet(GLUT_WINDOW_HEIGHT) / 2);
 	glutWarpPointer(glutGet(GLUT_WINDOW_WIDTH) / 2, glutGet(GLUT_WINDOW_HEIGHT) / 2);
 }
 
 static void mouseMove(int x, int y)
 {
-	rotateCamera(x, y);
+	if(mouseButtonsClicked[LEFT]) {
+		// increase angle around player
+		// look for alternatives not based in the coordinate system
+		// because it foreces you to warp to the center.
+		// Float angleChangee = Mouse difference in X *  0.3;
+		// angleAroundPlayer += angleChange
+		// static float realYaw;
+		// realYaw += (float) (x - glutGet(GLUT_WINDOW_WIDTH) / 2);
+		// cameraYaw = realYaw * 0.08;
+		// glutWarpPointer(glutGet(GLUT_WINDOW_WIDTH) / 2, glutGet(GLUT_WINDOW_HEIGHT) / 2);
+		
+		static float realAngleChange;
+		realAngleChange += (float) (x - glutGet(GLUT_WINDOW_WIDTH) / 2);
+		angleAroundPlayer = realAngleChange * 0.8;
+		cameraYaw = (objectRotation + angleAroundPlayer);
+		glutWarpPointer(glutGet(GLUT_WINDOW_WIDTH) / 2, glutGet(GLUT_WINDOW_HEIGHT) / 2);
+
+	}
+	
+	if(mouseButtonsClicked[RIGHT]) {
+		// increase angle around player
+		// look for alternatives not based in the coordinate system
+		// because it foreces you to warp to the center.
+		// Float pitchChange = Mouse difference in Y *  0.1;
+		// cameraPitch += angleChange
+		static float realPitch;
+		realPitch += (float) (y - glutGet(GLUT_WINDOW_HEIGHT) / 2);
+		cameraPitch = realPitch * 0.08;
+		printf("camera pitch: %f, x: %d, y: %d\n", cameraPitch, x, y);
+		glutWarpPointer(glutGet(GLUT_WINDOW_WIDTH) / 2, glutGet(GLUT_WINDOW_HEIGHT) / 2);
+	}
+}
+
+void mouseFunction(int button, int state, int mx, int my) 
+{
+	switch (button)
+	{
+	case LEFT:
+		mouseButtonsClicked[LEFT] = !state;
+		break;
+	case RIGHT:
+		mouseButtonsClicked[RIGHT] = !state;
+
+		break;
+	case MIDDLE:
+
+		break;
+	
+	case FRONT_WHEEL:
+		distanceFromPlayer += 0.1;
+		break;
+	
+	case BACK_WHEEL:
+		distanceFromPlayer -= 0.11;
+		break;
+	
+	default:
+		break;
+	}
+	
+
+	// printf("Clicking the mouse!\nstate: %d, button: %d, x: %d, y: %d\n", state, button, mx, my);
+}
+
+void calculateCameraPosition() {
+	float horizontalDistance = distanceFromPlayer * cos(toRadians(cameraPitch));
+	float verticalDistance   = distanceFromPlayer * sin(toRadians(cameraPitch)); 
+
+	float theta =  objectRotation + angleAroundPlayer;
+	float offsetX = horizontalDistance * sin(toRadians(theta));
+	float offsetZ = horizontalDistance * cos(toRadians(theta));
+	cameraPosition.x = thirdPersonObj.x - offsetX;
+	cameraPosition.z = thirdPersonObj.z - offsetZ;
+	cameraPosition.y = thirdPersonObj.y + verticalDistance;
+
 }
 
 int main(int argc, char **argv)
@@ -370,23 +484,32 @@ int main(int argc, char **argv)
 	glutTimerFunc(50, timerFunc, 1);
 
 	glutCreateWindow("Moon Rover");
-	glutFullScreen();
+	// glutFullScreen();
 	glutSetCursor(GLUT_CURSOR_CROSSHAIR);
+
+	// Supported functions
 	glutPassiveMotionFunc(mouseMove);
 	glutMotionFunc(mouseMove);
+	glutMouseFunc(mouseFunction);
 	glutDisplayFunc(display);
 	glutKeyboardFunc(keyPressed);
 	glutKeyboardUpFunc(keyReleased);
 	glutReshapeFunc(reshapeFunc);
+	
+	// Init
 	glewInit();
 	initTextures();
 	initShaders();
 
+	// Init scen set up
 	terrain = terrain_create(NUM_VERTEX_X, NUM_VERTEX_Z, SIDE_LENGTH_X, SIDE_LENGTH_Z, {1, 1, 1});
 	terrain_bind(terrain, vertexPosLoc1, vertexColLoc1, vertexTexcoordLoc1, vertexNormalLoc1);
 
 	earth = sphere_create(7, 40, 40, {1, 1, 1});
 	sphere_bind(earth, vertexPosLoc2, vertexColLoc2, vertexTexcoordLoc2, vertexNormalLoc2);
+
+	sphereRover = sphere_create(0.3,40, 40, {1, 1, 1});
+	sphere_bind(sphereRover, vertexPosLoc2, vertexColLoc2, vertexTexcoordLoc2, vertexNormalLoc2);
 
 	skybox = sphere_create(1500, 40, 40, {1.2, 1.2, 1.2});
 	sphere_bind(skybox, vertexPosLoc3, vertexColLoc3, vertexTexcoordLoc3, vertexNormalLoc3);
