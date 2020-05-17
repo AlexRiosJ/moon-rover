@@ -48,8 +48,7 @@ class Rover
 
         // For animation
         float wheelRotation;
-        float currentDirection;
-        float currentDirectionAnimation;
+        float currentTurnAnimation;
     public:
         Rover();
         ~Rover();
@@ -68,7 +67,6 @@ class Rover
         void getWheelRightFrontXZPosition(float *);
 
         void rotateWheels(int);
-        void setDirection(float);
-
-        float getDirection();
+        void turnWheels(float);
+        void rotateRover(int);
 };
