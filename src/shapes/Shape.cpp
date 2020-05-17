@@ -4,6 +4,7 @@
 #include <sstream>
 #include <shapes/Shape.hpp>
 #include <GL/glew.h>
+#include <stdlib.h>
 
 #define BIND_BUFFER_SIZE 3
 #define BIND_BUFFER_VERTEX_ARRAY 0
@@ -88,8 +89,8 @@ void Shape::Load(const char *path)
                 file >> faceVertex;
                 std::vector<std::string> tokens = split(faceVertex, '/');
                 
-                unsigned int v = stoi(tokens[0]) - 1;
-                unsigned int vn = stoi(tokens[2]) - 1;
+                unsigned int v = atoi(tokens[0].c_str()) - 1;
+                unsigned int vn = atoi(tokens[2].c_str()) - 1;
                 Vec3 vertex = rawVetexes[v];
                 Vec3 normal = rawNormals[vn];
                 Vec3 color;

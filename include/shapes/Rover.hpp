@@ -69,6 +69,7 @@ class Rover
 
         void rotateWheels(int);
         void setDirection(float);
+        void setRotation(float);
 
         float getDirection();
 };

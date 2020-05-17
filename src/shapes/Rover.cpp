@@ -236,6 +236,11 @@ void Rover::setDirection(float angle)
 	std::cout << this->currentDirectionAnimation << " " << this->currentDirectionAnimation - angle << "\n";
 }
 
+void Rover::setRotation(float angle) 
+{
+	this->deg = angle;
+}
+
 float Rover::getDirection()
 {
 	return this->currentDirectionAnimation;

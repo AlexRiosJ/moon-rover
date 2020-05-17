@@ -52,6 +52,7 @@ typedef struct
 
 unsigned char keys[256];
 bool mouseButtonsClicked[5] = {};
+float lastClickedCoord[2] = {};
 
 static GLuint programId1, vertexPosLoc1, vertexColLoc1, vertexTexcoordLoc1, vertexNormalLoc1, modelMatrixLoc1, viewMatrixLoc1, projMatrixLoc1;
 static GLuint programId2, vertexPosLoc2, vertexColLoc2, vertexTexcoordLoc2, vertexNormalLoc2, modelMatrixLoc2, viewMatrixLoc2, projMatrixLoc2;
@@ -61,8 +62,8 @@ static Mat4 modelMatrix, viewMatrix, projectionMatrix;
 static GLuint texturesLocs[5];
 
 Vertex cameraPosition = {0, 1.5, 1.0};
-float cameraPitch = (0 / 0.08);
-float cameraYaw = (180.0 / 0.08);
+float cameraPitch = 0;
+float cameraYaw = 180.0;
 float cameraRoll;
 float cameraSpeed = 0.05;
 float distanceFromPlayer = -2.5;
@@ -73,8 +74,8 @@ float objectYaw = 0.0; // object yaw
 float objectPitch = 0.0;
 float objectSpeed = 0.05;
 
-Player player = createPlayer(thirdPersonObj, objectPitch, objectYaw, 0.0, objectSpeed);
-Camera camera = createCamera(player, cameraPosition, cameraPitch, cameraYaw, cameraRoll, cameraSpeed, 0.08, -2.5, angleAroundPlayer);
+// Player player = createPlayer(thirdPersonObj, objectPitch, objectYaw, 0.0, objectSpeed);
+// Camera camera = createCamera(player, cameraPosition, cameraPitch, cameraYaw, cameraRoll, cameraSpeed, 0.08, -2.5, angleAroundPlayer);
 
 static GLuint ambientLightLoc, diffuseLightLoc, lightPositionLoc, materialALoc, materialDLoc, materialSLoc, exponentLoc, cameraLoc;
 
@@ -309,10 +310,11 @@ static void display()
 	mIdentity(&modelMatrix);
 	translate(&modelMatrix, thirdPersonObj.x, thirdPersonObj.y, thirdPersonObj.z);
 	rotateY(&modelMatrix, objectYaw);
+	// rover.setRotation(objectYaw);
 	glUniformMatrix4fv(modelMatrixLoc1, 1, GL_TRUE, modelMatrix.values);
-	// sphere_draw(sphereRover);
-	rover.setPosition(thirdPersonObj.x, thirdPersonObj.y, thirdPersonObj.z);
-	rover.draw(modelMatrixLoc1);
+	sphere_draw(sphereRover);
+	// rover.setPosition(thirdPersonObj.x, thirdPersonObj.y, thirdPersonObj.z);
+	// rover.draw(modelMatrixLoc1);
 
 	// Draw Terrain
 	mIdentity(&modelMatrix);
@@ -428,49 +430,50 @@ static void keyReleased(unsigned char key, int x, int y)
 
 static void mouseMove(int x, int y)
 {
-	if (mouseButtonsClicked[LEFT])
+	float nx = 2.0 * x / glutGet(GLUT_WINDOW_WIDTH)  - 1;
+	float ny = -1 * (2.0 * y / glutGet(GLUT_WINDOW_HEIGHT) - 1);
+	if (mouseButtonsClicked[LEFT] || mouseButtonsClicked[RIGHT])
 	{
-		// increase angle around player
-		// look for alternatives not based in the coordinate system
-		// because it foreces you to warp to the center.
-		// Float angleChangee = Mouse difference in X *  0.3;
-		// angleAroundPlayer += angleChange
-		// static float realYaw;
-		// realYaw += (float) (x - glutGet(GLUT_WINDOW_WIDTH) / 2);
-		// cameraYaw = realYaw * 0.08;
-		// glutWarpPointer(glutGet(GLUT_WINDOW_WIDTH) / 2, glutGet(GLUT_WINDOW_HEIGHT) / 2);
+		float angleAroundPlayerChange = (nx - lastClickedCoord[0]) * 500;
+		printf("Angle around  player decrement: %f\n", angleAroundPlayerChange);
+		angleAroundPlayer -= angleAroundPlayerChange;
 
-		static float realAngleChange;
-		realAngleChange += (float)(x - glutGet(GLUT_WINDOW_WIDTH) / 2);
-		angleAroundPlayer = realAngleChange * 0.8;
-		glutWarpPointer(glutGet(GLUT_WINDOW_WIDTH) / 2, glutGet(GLUT_WINDOW_HEIGHT) / 2);
-	}
+		float cameraPitchChange =  (ny - lastClickedCoord[1]) * 100;
+		printf("Camera pitch decrement: %f\n",cameraPitchChange);
+		cameraPitch += cameraPitchChange;
+		if(cameraPitch <= -90 || cameraPitch > 10) {
+			cameraPitch -= cameraPitchChange;
+		}
 
-	if (mouseButtonsClicked[RIGHT])
-	{
-		// increase angle around player
-		// look for alternatives not based in the coordinate system
-		// because it foreces you to warp to the center.
-		// Float pitchChange = Mouse difference in Y *  0.1;
-		// cameraPitch += angleChange
-		static float realPitch;
-		realPitch += (float)(y - glutGet(GLUT_WINDOW_HEIGHT) / 2);
-		cameraPitch = realPitch * 0.08;
-		// printf("camera pitch: %f, x: %d, y: %d\n", cameraPitch, x, y);
-		glutWarpPointer(glutGet(GLUT_WINDOW_WIDTH) / 2, glutGet(GLUT_WINDOW_HEIGHT) / 2);
+		lastClickedCoord[0] = nx;
+		lastClickedCoord[1] = ny;
+		printf("Moving the mouse! x: %f, y: %f\n\n", nx, ny);
 	}
+	display();
 }
 
 void mouseFunction(int button, int state, int mx, int my)
 {
+		// Obtener coordenadas de dispositivo normalizado
+	float nx =       2.0 * mx / glutGet(GLUT_WINDOW_WIDTH)  - 1;
+	float ny = -1 * (2.0 * my / glutGet(GLUT_WINDOW_HEIGHT) - 1);
+	printf("Clicking the mouse!\nstate: %d, button: %d, x: %f, y: %f\n\n",state,button, nx, ny);
+
 	switch (button)
 	{
 	case LEFT:
 		mouseButtonsClicked[LEFT] = !state;
+		if(!state) {
+			lastClickedCoord[0] = nx;
+			lastClickedCoord[1] = ny;
+		}
 		break;
 	case RIGHT:
 		mouseButtonsClicked[RIGHT] = !state;
-
+		if(!state) {
+			lastClickedCoord[0] = nx;
+			lastClickedCoord[1] = ny;
+		}
 		break;
 	case MIDDLE:
 
@@ -487,8 +490,7 @@ void mouseFunction(int button, int state, int mx, int my)
 	default:
 		break;
 	}
-
-	// printf("Clicking the mouse!\nstate: %d, button: %d, x: %d, y: %d\n", state, button, mx, my);
+	
 }
 
 void calculateCameraPosition()
@@ -536,7 +538,7 @@ int main(int argc, char **argv)
 	initTextures();
 	initShaders();
 
-	// Init scen set up
+	// Init scene set up
 	terrain = terrain_create(NUM_VERTEX_X, NUM_VERTEX_Z, SIDE_LENGTH_X, SIDE_LENGTH_Z, {1, 1, 1});
 	terrain_bind(terrain, vertexPosLoc1, vertexColLoc1, vertexTexcoordLoc1, vertexNormalLoc1);
 
@@ -549,8 +551,8 @@ int main(int argc, char **argv)
 	skybox = sphere_create(1500, 40, 40, {1.2, 1.2, 1.2});
 	sphere_bind(skybox, vertexPosLoc3, vertexColLoc3, vertexTexcoordLoc3, vertexNormalLoc3);
 
-	rover.load();
-	rover.bind(programId1, vertexPosLoc1, vertexNormalLoc1, vertexColLoc1);
+	// rover.load();
+	// rover.bind(programId1, vertexPosLoc1, vertexNormalLoc1, vertexColLoc1);
 
 	glClearColor(0, 0, 0, 1.0);
 	glutMainLoop();
