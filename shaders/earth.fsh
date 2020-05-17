@@ -6,9 +6,11 @@ in vec3 vertexNormalToFS;
 in vec3 vertexColorToFS;
 in vec2 vertexTexcoordToFS1;
 in vec2 vertexTexcoordToFS2;
+in vec2 vertexTexcoordToFS3;
 
-uniform sampler2D texture1;
-uniform sampler2D texture2;
+uniform sampler2D earthTexture;
+uniform sampler2D earthCloudsTexture;
+uniform sampler2D earthSpecularTexture;
 
 uniform vec3 ambientLight;
 uniform vec3 materialA;
@@ -37,8 +39,8 @@ void main() {
 
 	vec3 tempColor;
 
-    tempColor = ambientLight * materialA + diffuseLight * (materialD * factorD + materialS * factorS);
+    tempColor = ambientLight * materialA + diffuseLight * (materialD * factorD + materialS * factorS * texture(earthSpecularTexture, vertexTexcoordToFS3).xyz * 10);
     tempColor = clamp(tempColor * vertexColorToFS, 0.0, 1.0);
 
-    pixelColor = vec4(tempColor * vec3(3, 3, 3), 1) * mix(texture(texture1, vertexTexcoordToFS1), texture(texture2, vertexTexcoordToFS2), 0.5);
+    pixelColor = vec4(tempColor * vec3(3, 3, 3), 1) * mix(texture(earthTexture, vertexTexcoordToFS1), texture(earthCloudsTexture, vertexTexcoordToFS2), 0.5);
 }

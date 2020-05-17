@@ -10,6 +10,8 @@
 #endif
 #define RESET 0xFFFFFFFF
 
+Vertex hueToRgb(float H);
+
 struct strTerrain
 {
 	GLuint terrainVA;
@@ -58,6 +60,12 @@ Terrain terrain_create(int numVertexX, int numVertexZ, int sideLengthX, int side
 			terrain->vertices[i * numVertexX + j].x = x;
 			terrain->vertices[i * numVertexX + j].y = Perlin_Get2d(x, z, 0.1, 20) * ((-cos(j * M_PI * 2 / numVertexX) + 1) + ((-cos(j * M_PI * 2 / numVertexX * 5) + 1) / 5.0) + ((-cos(j * M_PI * 2 / numVertexX * 7) + 1) / 7.0)) * ((-cos(i * M_PI * 2 / numVertexZ) + 1) + ((-cos(i * M_PI * 2 / numVertexZ * 5) + 1) / 5.0) + ((-cos(i * M_PI * 2 / numVertexZ * 7) + 1) / 7.0)) * 0.25;
 			terrain->vertices[i * numVertexX + j].z = z;
+
+			// Test height map with HUE value.
+			// Vertex rgb = hueToRgb(terrain->vertices[i * numVertexX + j].y * 240);
+			// terrain->colors[i * numVertexX + j].x = rgb.x / 255.0;
+			// terrain->colors[i * numVertexX + j].y = rgb.y / 255.0;
+			// terrain->colors[i * numVertexX + j].z = rgb.z / 255.0;
 
 			terrain->colors[i * numVertexX + j].x = 1;
 			terrain->colors[i * numVertexX + j].y = 1;
@@ -174,4 +182,45 @@ void terrain_draw(Terrain terrain)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, terrain->terrainBuffer[4]);
 	int totalIndexes = (terrain->numVertexX - 1) * (terrain->numVertexZ * 2 + 1);
 	glDrawElements(GL_TRIANGLE_STRIP, totalIndexes * sizeof(GLuint), GL_UNSIGNED_INT, 0);
+}
+
+Vertex hueToRgb(float H)
+{
+	Vertex rgb = {255, 0, 0};
+
+	if (H <= 60)
+	{
+		rgb.y = (H / 60.0) * 255;
+	}
+	else if (H <= 120)
+	{
+		rgb.x = 255 - (((H - 60.0) / 60.0) * 255);
+		rgb.y = 255;
+	}
+	else if (H <= 180)
+	{
+		rgb.x = 0;
+		rgb.y = 255;
+		rgb.z = ((H - 120.0) / 60.0) * 255;
+	}
+	else if (H <= 240)
+	{
+		rgb.x = 0;
+		rgb.y = 255 - (((H - 180.0) / 60.0) * 255);
+		rgb.z = 255;
+	}
+	else if (H <= 300)
+	{
+		rgb.x = ((H - 240.0) / 60.0) * 255;
+		rgb.y = 0;
+		rgb.z = 255;
+	}
+	else if (H <= 360)
+	{
+		rgb.x = 255;
+		rgb.y = 0;
+		rgb.z = 255 - (((H - 300.0) / 60.0) * 255);
+	}
+
+	return rgb;
 }
