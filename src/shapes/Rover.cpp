@@ -84,7 +84,7 @@ void Rover::draw(GLuint modelLoc)
 	mIdentity(&modelMatrix);
 	translate(&modelMatrix, this->x, this->y, this->z);
 
-	rotateY(&modelMatrix, this->deg += -.2);
+	rotateY(&modelMatrix, this->deg);
 
 	pushMatrix(&modelMatrix);
 
