@@ -4,13 +4,16 @@
 #include "transforms.h"
 #include "sphere.h"
 #include "terrain.h"
+#include "camera.h"
+#include "player.h"
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-#define toRadians(deg) deg *M_PI / 180.0
+
+static inline float toRadians(float deg) {return deg *M_PI / 180.0;}
 
 #define RESET 0xFFFFFFFF
 #define NUM_VERTEX_X 512
@@ -26,6 +29,18 @@ typedef enum {
 	LEFT, MIDDLE, RIGHT, FRONT_WHEEL, BACK_WHEEL
 }MouseButton;
 
+typedef struct {
+	GLuint id;
+	GLuint vertexPosLoc;
+	GLuint vertexColLoc;
+	GLuint vertexTexCoord;
+	GLuint vertexNormal;
+	GLuint modelMatrix;
+	GLuint viewMatrix;
+	GLuint projectionMatrix;
+
+}ShaderProgramLocationVariables;
+
 unsigned char keys[256];
 bool mouseButtonsClicked[5] = {};
 
@@ -34,21 +49,23 @@ static GLuint programId2, vertexPosLoc2, vertexColLoc2, vertexTexcoordLoc2, vert
 static GLuint programId3, vertexPosLoc3, vertexColLoc3, vertexTexcoordLoc3, vertexNormalLoc3, modelMatrixLoc3, viewMatrixLoc3, projMatrixLoc3;
 static Mat4 modelMatrix, viewMatrix, projectionMatrix;
 
-
-
 Vertex cameraPosition = {0, 1.5, 1.0};
 float cameraPitch = (0 / 0.08);
 float cameraYaw = (180.0 / 0.08); 
 float cameraRoll;
 float cameraSpeed = 0.05;
-float distanceFromPlayer = 2-5;
+float distanceFromPlayer = -2.5;
 float angleAroundPlayer = (180.0 / 0.08);
+
+
 
 Vertex thirdPersonObj = {0, 1, -1.0};
 float objectYaw = 0.0; // object yaw
 float objectPitch = 0.0;
 float objectSpeed = 0.05;
 
+Player player = createPlayer(thirdPersonObj, objectPitch, objectYaw, 0.0, objectSpeed);
+Camera camera = createCamera(player, cameraPosition, cameraPitch, cameraYaw, cameraRoll, cameraSpeed, 0.08, -2.5, angleAroundPlayer);
 
 static GLuint ambientLightLoc, diffuseLightLoc, lightPositionLoc, materialALoc, materialDLoc, materialSLoc, exponentLoc, cameraLoc;
 

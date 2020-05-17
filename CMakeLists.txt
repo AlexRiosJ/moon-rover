@@ -14,9 +14,11 @@ add_library(mat4 src/mat4.cpp)
 add_library(perlin src/perlin.cpp)
 add_library(sphere src/sphere.cpp)
 add_library(terrain src/terrain.cpp)
+add_library(camera src/camera.cpp)
+add_library(player src/player.cpp)
 
 # Link Libs
-target_link_libraries(main utils mat4 transforms terrain perlin sphere glew32 freeglut opengl32)
+target_link_libraries(main utils mat4 transforms terrain perlin sphere camera player glew32 freeglut opengl32)
 
 # After build
 file(GLOB LIBRARIES "lib/*.dll")
