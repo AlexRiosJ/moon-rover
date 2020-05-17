@@ -240,7 +240,7 @@ void Rover::turnWheels(float angle)
 void Rover::rotateRover(int clock)
 {
 	float direction = clock ? 1.0 : -1.0;
-	this->deg += 0.5 * direction;
+	this->deg += 0.25 * direction;
 	if(this->deg >= 360.0)
 	{
 		this->deg = 0.0;
