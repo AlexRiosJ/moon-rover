@@ -38,14 +38,15 @@ static Mat4 modelMatrix, viewMatrix, projectionMatrix;
 
 Vertex cameraPosition = {0, 1.5, 1.0};
 float cameraPitch = (0 / 0.08);
-float cameraYaw = 0;
+float cameraYaw = (180.0 / 0.08); 
 float cameraRoll;
 float cameraSpeed = 0.05;
 float distanceFromPlayer = 2-5;
-float angleAroundPlayer = 0.0;
+float angleAroundPlayer = (180.0 / 0.08);
 
 Vertex thirdPersonObj = {0, 1, -1.0};
-float objectRotation = 0.0; // object yaw
+float objectYaw = 0.0; // object yaw
+float objectPitch = 0.0;
 float objectSpeed = 0.05;
 
 
@@ -196,45 +197,34 @@ static void initShaders()
 
 static void move()
 {
-	cameraSpeed = keys[32] ? 0.1 : 0.05; // If space bar is pressed duplicate speed
+	objectSpeed = keys[32] ? 0.1 : 0.05; // If space bar is pressed duplicate speed
 
-	float nextForwardXPosition = cameraSpeed * -sin(toRadians(cameraYaw));
-	float nextForwardYPosition = cameraSpeed * sin(toRadians(cameraPitch));
-	float nextForwardZPosition = cameraSpeed * cos(toRadians(cameraYaw));
-
-	float nextSideXPosition = cameraSpeed * -cos(toRadians(cameraYaw));
-	float nextSideZPosition = cameraSpeed * -sin(toRadians(cameraYaw));
+	float nextForwardXPosition = objectSpeed * cos(toRadians(objectYaw));
+	float nextForwardZPosition = objectSpeed * -sin(toRadians(objectYaw));
 
 	if (keys['w'])
 	{
-		thirdPersonObj.z -= objectSpeed;
-
-		cameraPosition.x -= nextForwardXPosition;
-		cameraPosition.y -= nextForwardYPosition;
-		cameraPosition.z -= nextForwardZPosition;
+		thirdPersonObj.x -= nextForwardXPosition;
+		thirdPersonObj.z -= nextForwardZPosition;
 	}
 	if (keys['s'])
 	{
-		thirdPersonObj.z += objectSpeed;
 
-		cameraPosition.x += nextForwardXPosition;
-		cameraPosition.y += nextForwardYPosition;
-		cameraPosition.z += nextForwardZPosition;
+		thirdPersonObj.x += nextForwardXPosition;
+		thirdPersonObj.z += nextForwardZPosition;
 	}
 	if (keys['a'])
 	{
-		thirdPersonObj.x -= objectSpeed;
-
-		cameraPosition.x += nextSideXPosition;
-		cameraPosition.z += nextSideZPosition;
+		objectYaw += 2;
+		// printf("Camera yaw: %f,\tObject Yaw: %f,\t Angle Around Player: %f\n",objectYaw + angleAroundPlayer, objectYaw, angleAroundPlayer);
 	}
 	if (keys['d'])
 	{
-		thirdPersonObj.x += objectSpeed;
-
-		cameraPosition.x -= nextSideXPosition;
-		cameraPosition.z -= nextSideZPosition;
+		objectYaw -= 2;
+	
 	}
+	cameraYaw = (objectYaw + angleAroundPlayer);
+	
 }
 
 static void drawTerrain(int offsetX, int offsetZ)
@@ -280,6 +270,7 @@ static void display()
 	// Draw an object to build third person view from it
 	mIdentity(&modelMatrix);
 	translate(&modelMatrix, thirdPersonObj.x, thirdPersonObj.y, thirdPersonObj.z);
+	rotateY(&modelMatrix, objectYaw);
 	glUniformMatrix4fv(modelMatrixLoc1, 1, GL_TRUE, modelMatrix.values);
 	sphere_draw(sphereRover);
 
@@ -388,13 +379,6 @@ static void keyReleased(unsigned char key, int x, int y)
 	keys[key] = 0;
 }
 
-void rotateCamera(int x, int y)
-{
-	cameraYaw += (float)(x - glutGet(GLUT_WINDOW_WIDTH) / 2);
-	cameraPitch += (float)(y - glutGet(GLUT_WINDOW_HEIGHT) / 2);
-	glutWarpPointer(glutGet(GLUT_WINDOW_WIDTH) / 2, glutGet(GLUT_WINDOW_HEIGHT) / 2);
-}
-
 static void mouseMove(int x, int y)
 {
 	if(mouseButtonsClicked[LEFT]) {
@@ -411,7 +395,6 @@ static void mouseMove(int x, int y)
 		static float realAngleChange;
 		realAngleChange += (float) (x - glutGet(GLUT_WINDOW_WIDTH) / 2);
 		angleAroundPlayer = realAngleChange * 0.8;
-		cameraYaw = (objectRotation + angleAroundPlayer);
 		glutWarpPointer(glutGet(GLUT_WINDOW_WIDTH) / 2, glutGet(GLUT_WINDOW_HEIGHT) / 2);
 
 	}
@@ -425,7 +408,7 @@ static void mouseMove(int x, int y)
 		static float realPitch;
 		realPitch += (float) (y - glutGet(GLUT_WINDOW_HEIGHT) / 2);
 		cameraPitch = realPitch * 0.08;
-		printf("camera pitch: %f, x: %d, y: %d\n", cameraPitch, x, y);
+		// printf("camera pitch: %f, x: %d, y: %d\n", cameraPitch, x, y);
 		glutWarpPointer(glutGet(GLUT_WINDOW_WIDTH) / 2, glutGet(GLUT_WINDOW_HEIGHT) / 2);
 	}
 }
@@ -450,7 +433,7 @@ void mouseFunction(int button, int state, int mx, int my)
 		break;
 	
 	case BACK_WHEEL:
-		distanceFromPlayer -= 0.11;
+		distanceFromPlayer -= 0.1;
 		break;
 	
 	default:
@@ -465,7 +448,7 @@ void calculateCameraPosition() {
 	float horizontalDistance = distanceFromPlayer * cos(toRadians(cameraPitch));
 	float verticalDistance   = distanceFromPlayer * sin(toRadians(cameraPitch)); 
 
-	float theta =  objectRotation + angleAroundPlayer;
+	float theta =  objectYaw + angleAroundPlayer;
 	float offsetX = horizontalDistance * sin(toRadians(theta));
 	float offsetZ = horizontalDistance * cos(toRadians(theta));
 	cameraPosition.x = thirdPersonObj.x - offsetX;
