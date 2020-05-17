@@ -45,6 +45,7 @@ class Rover
 
         // Rover rotation
         float deg;
+        float rad;
 
         // For animation
         float wheelRotation;

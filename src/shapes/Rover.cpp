@@ -16,6 +16,7 @@ Rover::Rover()
 	this->z = 0.0;
 
 	this->deg = 0.0;
+	this->rad = 0.0;
 
 	this->wheelAngle = 0.0;
 	this->currentTurnAnimation = 0.0;
@@ -245,4 +246,5 @@ void Rover::rotateRover(int clock)
 	{
 		this->deg = 0.0;
 	}
+	this->rad = this->deg * M_PI / 180;
 }
