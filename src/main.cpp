@@ -1,5 +1,7 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
+#include "shapes/Rover.hpp"
+#include "perlin.h"
 #include "utils.h"
 #include "transforms.h"
 #include "sphere.h"
@@ -24,6 +26,7 @@ static inline float toRadians(float deg) { return deg * M_PI / 180.0; }
 Sphere earth, sphereRover;
 Terrain terrain;
 Sphere skybox;
+Rover rover;
 
 typedef enum
 {
@@ -249,12 +252,13 @@ static void move()
 
 	if (keys['w'])
 	{
+		rover.rotateWheels(1);
 		thirdPersonObj.x -= nextForwardXPosition;
 		thirdPersonObj.z -= nextForwardZPosition;
 	}
 	if (keys['s'])
 	{
-
+		rover.rotateWheels(0);
 		thirdPersonObj.x += nextForwardXPosition;
 		thirdPersonObj.z += nextForwardZPosition;
 	}
@@ -306,7 +310,9 @@ static void display()
 	translate(&modelMatrix, thirdPersonObj.x, thirdPersonObj.y, thirdPersonObj.z);
 	rotateY(&modelMatrix, objectYaw);
 	glUniformMatrix4fv(modelMatrixLoc1, 1, GL_TRUE, modelMatrix.values);
-	sphere_draw(sphereRover);
+	// sphere_draw(sphereRover);
+	rover.setPosition(thirdPersonObj.x, thirdPersonObj.y, thirdPersonObj.z);
+	rover.draw(modelMatrixLoc1);
 
 	// Draw Terrain
 	mIdentity(&modelMatrix);
@@ -542,6 +548,9 @@ int main(int argc, char **argv)
 
 	skybox = sphere_create(1500, 40, 40, {1.2, 1.2, 1.2});
 	sphere_bind(skybox, vertexPosLoc3, vertexColLoc3, vertexTexcoordLoc3, vertexNormalLoc3);
+
+	rover.load();
+	rover.bind(programId1, vertexPosLoc1, vertexNormalLoc1, vertexColLoc1);
 
 	glClearColor(0, 0, 0, 1.0);
 	glutMainLoop();
