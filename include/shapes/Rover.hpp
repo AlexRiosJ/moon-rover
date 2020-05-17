@@ -43,6 +43,10 @@ class Rover
         float y;
         float z;
 
+        // Rover rotation
+        float deg;
+
+        // For animation
         float wheelRotation;
         float currentDirection;
         float currentDirectionAnimation;
@@ -52,6 +56,8 @@ class Rover
         void load();
         void bind(GLuint, GLuint, GLuint, GLuint);
         void draw(GLuint);
+
+        void setPosition(float x, float y, float z);
 
         void getWheelLeftBackXZPosition(float *);
         void getWheelLeftMidXZPosition(float *);
@@ -63,4 +69,6 @@ class Rover
 
         void rotateWheels(int);
         void setDirection(float);
+
+        float getDirection();
 };

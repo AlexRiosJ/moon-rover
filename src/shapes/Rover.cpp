@@ -2,16 +2,20 @@
 #include <GL/glew.h>
 #include <transforms.h>
 #include <mat4.h>
+#include <math.h>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 Rover::Rover()
 {
-	this->angleX = 0;
-	this->angleY = 0;
-	this->angleZ = 0;
 
 	this->x = 0.0;
 	this->y = 0.0;
 	this->z = 0.0;
+
+	this->deg = M_PI;
 
 	this->wheelAngle = 0;
 	this->currentDirection = 0;
@@ -78,11 +82,9 @@ void Rover::draw(GLuint modelLoc)
 	Mat4 modelMatrix;
 
 	mIdentity(&modelMatrix);
-	translate(&modelMatrix, 0, 0, -0.8);
+	translate(&modelMatrix, this->x, this->y, this->z);
 
-	//rotateX(&modelMatrix, this->angleX -= 0.2);
-	//rotateY(&modelMatrix, this->angleY -= 0.2);
-	//rotateZ(&modelMatrix, this->angleZ -= 0.2);
+	rotateY(&modelMatrix, this->deg += -.2);
 
 	pushMatrix(&modelMatrix);
 
@@ -167,6 +169,13 @@ void Rover::draw(GLuint modelLoc)
 	wheelRightFront.Draw();
 }
 
+void Rover::setPosition(float x, float y, float z)
+{
+	this->x = x;
+	this->y = y;
+	this->z = z;
+}
+
 void Rover::getWheelLeftBackXZPosition(float *coord)
 {
 	coord[0] = this->x + this->wheelLeftBackOffsetX;
@@ -215,9 +224,19 @@ void Rover::rotateWheels(int forward)
 
 void Rover::setDirection(float angle)
 {
-	if(this->currentDirectionAnimation >= angle) 
+	/*
+	if (this->currentDirectionAnimation - angle) 
+	{
+		this->currentDirection = angle;
 		return;
-	float dt = (angle) / 100.0;
+	}
+	*/
+	float dt = fabs(this->currentDirection - angle) / 100.0;
 	this->currentDirectionAnimation += dt;
-	std::cout << this->currentDirectionAnimation << "\n";
+	std::cout << this->currentDirectionAnimation << " " << this->currentDirectionAnimation - angle << "\n";
+}
+
+float Rover::getDirection()
+{
+	return this->currentDirectionAnimation;
 }
