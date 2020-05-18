@@ -99,7 +99,8 @@ static void displayFunc()
 	glUniformMatrix4fv(viewMatrixLoc, 1, 1, viewMatrix.values);
 
 	r.rotateWheels(1);
-	r.rotateRover(1);
+	// r.rotateRover(1);
+	r.rotateRoverRoll(45);
 	r.turnWheels(40);
 	r.setPosition(0, 0, rz);
 	r.draw(modelMatrixLoc);

@@ -22,6 +22,7 @@ class Rover
         float angleX;
         float angleY;
         float angleZ;
+        float radY;
 
         float wheelAngle;
          
@@ -47,10 +48,6 @@ class Rover
         float y;
         float z;
 
-        // Rover rotation
-        float deg;
-        float rad;
-
         // Wheel animation
         float wheelRotation;
         float currentTurnAnimation;
@@ -73,6 +70,8 @@ class Rover
 
         void rotateWheels(int);
         void turnWheels(float);
-        void rotateRover(int);
+        void rotateRover(int clock);
+        void rotateRoverPitch(float deg);
+        void rotateRoverRoll(float deg);
         void setWheelsY(float lf, float lm, float lb, float rf, float rm, float rb);
 };
