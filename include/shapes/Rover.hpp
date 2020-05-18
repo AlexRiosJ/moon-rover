@@ -69,5 +69,7 @@ class Rover
 
         void rotateWheels(int);
         void turnWheels(float);
+        void resetTurnWheels();
         void rotateRover(int);
+        void setYawRotation(float);
 };

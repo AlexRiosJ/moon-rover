@@ -62,17 +62,17 @@ static Mat4 modelMatrix, viewMatrix, projectionMatrix;
 static GLuint texturesLocs[5];
 
 Vertex cameraPosition = {0, 1.5, 1.0};
-float cameraPitch = 0;
-float cameraYaw = 180.0;
+float cameraPitch = -30;
+float cameraYaw = 0.0;
 float cameraRoll;
 float cameraSpeed = 0.05;
-float distanceFromPlayer = -2.5;
-float angleAroundPlayer = (180.0 / 0.08);
+float distanceFromPlayer = -1.5;
+float angleAroundPlayer = 180;
 
 Vertex thirdPersonObj = {0, 1, 0};
 float objectYaw = 0.0; // object yaw
 float objectPitch = 0.0;
-float objectSpeed = 0.05;
+float objectSpeed = 0.02;
 
 // Player player = createPlayer(thirdPersonObj, objectPitch, objectYaw, 0.0, objectSpeed);
 // Camera camera = createCamera(player, cameraPosition, cameraPitch, cameraYaw, cameraRoll, cameraSpeed, 0.08, -2.5, angleAroundPlayer);
@@ -97,7 +97,7 @@ static void initTexture(const char *filename, GLuint textureId)
 	unsigned int width, height;
 	glBindTexture(GL_TEXTURE_2D, textureId);
 	loadBMP(filename, &data, &width, &height);
-	printf("%d, %d\n", width, height);
+	// printf("%d, %d\n", width, height);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, data);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -246,32 +246,54 @@ static void initShaders()
 
 static void move()
 {
-	objectSpeed = keys[32] ? 0.1 : 0.05; // If space bar is pressed duplicate speed
-
-	float nextForwardXPosition = objectSpeed * cos(toRadians(objectYaw));
-	float nextForwardZPosition = objectSpeed * -sin(toRadians(objectYaw));
+	float nextForwardXPosition = objectSpeed * -sin(toRadians(objectYaw));
+	float nextForwardZPosition = objectSpeed * -cos(toRadians(objectYaw));
 
 	if (keys['w'])
 	{
+		if (keys['a'])
+		{
+			objectYaw += 2;
+		}
+		if (keys['d'])
+		{
+			objectYaw -= 2;
+		}
 		rover.rotateWheels(1);
+		rover.setYawRotation(objectYaw);
 		thirdPersonObj.x -= nextForwardXPosition;
 		thirdPersonObj.z -= nextForwardZPosition;
 	}
+
 	if (keys['s'])
 	{
+		if (keys['a'])
+		{
+			objectYaw -= 2;
+		}
+		if (keys['d'])
+		{
+			objectYaw += 2;
+		}
 		rover.rotateWheels(0);
+		rover.setYawRotation(objectYaw);
 		thirdPersonObj.x += nextForwardXPosition;
 		thirdPersonObj.z += nextForwardZPosition;
 	}
+
 	if (keys['a'])
 	{
-		objectYaw += 2;
-		// printf("Camera yaw: %f,\tObject Yaw: %f,\t Angle Around Player: %f\n",objectYaw + angleAroundPlayer, objectYaw, angleAroundPlayer);
+		rover.turnWheels(30);
 	}
-	if (keys['d'])
+	else if (keys['d'])
 	{
-		objectYaw -= 2;
+		rover.turnWheels(-30);
 	}
+	else
+	{
+		rover.resetTurnWheels();
+	}
+
 	cameraYaw = (objectYaw + angleAroundPlayer);
 }
 
@@ -308,15 +330,14 @@ static void display()
 
 	// Draw an object to build third person view from it
 	mIdentity(&modelMatrix);
-	float roverHeight = vertexFromXZPosition(terrain, thirdPersonObj.x, thirdPersonObj.z).y;
-	translate(&modelMatrix, thirdPersonObj.x, roverHeight, thirdPersonObj.z);
-	rotateY(&modelMatrix, objectYaw);
+	thirdPersonObj.y = vertexFromXZPosition(terrain, thirdPersonObj.x, thirdPersonObj.z).y;
+	translate(&modelMatrix, thirdPersonObj.x, thirdPersonObj.y, thirdPersonObj.z);
 	Vertex normalInXZ = normalFromXZPosition(terrain, thirdPersonObj.x, thirdPersonObj.z);
-	printf("%.2f, %.2f, %.2f\n", normalInXZ.x, normalInXZ.y, normalInXZ.z);
+	printf("%.2f, %.2f, %.2f\n", thirdPersonObj.x, thirdPersonObj.y, thirdPersonObj.z);
 	glUniformMatrix4fv(modelMatrixLoc1, 1, GL_TRUE, modelMatrix.values);
-	sphere_draw(sphereRover);
-	// rover.setPosition(thirdPersonObj.x, vertexFromXZPosition(terrain, thirdPersonObj.x, thirdPersonObj.z).y, thirdPersonObj.z);
-	// rover.draw(modelMatrixLoc1);
+	// sphere_draw(sphereRover);
+	rover.setPosition(thirdPersonObj.x, thirdPersonObj.y + 0.164, thirdPersonObj.z);
+	rover.draw(modelMatrixLoc1);
 
 	// Draw Terrain
 	mIdentity(&modelMatrix);
@@ -432,47 +453,50 @@ static void keyReleased(unsigned char key, int x, int y)
 
 static void mouseMove(int x, int y)
 {
-	float nx = 2.0 * x / glutGet(GLUT_WINDOW_WIDTH)  - 1;
+	float nx = 2.0 * x / glutGet(GLUT_WINDOW_WIDTH) - 1;
 	float ny = -1 * (2.0 * y / glutGet(GLUT_WINDOW_HEIGHT) - 1);
 	if (mouseButtonsClicked[LEFT] || mouseButtonsClicked[RIGHT])
 	{
 		float angleAroundPlayerChange = (nx - lastClickedCoord[0]) * 500;
-		printf("Angle around  player decrement: %f\n", angleAroundPlayerChange);
+		// printf("Angle around  player decrement: %f\n", angleAroundPlayerChange);
 		angleAroundPlayer -= angleAroundPlayerChange;
 
-		float cameraPitchChange =  (ny - lastClickedCoord[1]) * 100;
-		printf("Camera pitch decrement: %f\n",cameraPitchChange);
+		float cameraPitchChange = (ny - lastClickedCoord[1]) * 100;
+		// printf("Camera pitch decrement: %f\n", cameraPitchChange);
 		cameraPitch += cameraPitchChange;
-		if(cameraPitch <= -90 || cameraPitch > 10) {
+		if (cameraPitch <= -90 || cameraPitch > -5)
+		{
 			cameraPitch -= cameraPitchChange;
 		}
 
 		lastClickedCoord[0] = nx;
 		lastClickedCoord[1] = ny;
-		printf("Moving the mouse! x: %f, y: %f\n\n", nx, ny);
+		// printf("Moving the mouse! x: %f, y: %f\n\n", nx, ny);
 	}
-	display();
+	glutPostRedisplay();
 }
 
 void mouseFunction(int button, int state, int mx, int my)
 {
-		// Obtener coordenadas de dispositivo normalizado
-	float nx =       2.0 * mx / glutGet(GLUT_WINDOW_WIDTH)  - 1;
+	// Obtener coordenadas de dispositivo normalizado
+	float nx = 2.0 * mx / glutGet(GLUT_WINDOW_WIDTH) - 1;
 	float ny = -1 * (2.0 * my / glutGet(GLUT_WINDOW_HEIGHT) - 1);
-	printf("Clicking the mouse!\nstate: %d, button: %d, x: %f, y: %f\n\n",state,button, nx, ny);
+	// printf("Clicking the mouse!\nstate: %d, button: %d, x: %f, y: %f\n\n", state, button, nx, ny);
 
 	switch (button)
 	{
 	case LEFT:
 		mouseButtonsClicked[LEFT] = !state;
-		if(!state) {
+		if (!state)
+		{
 			lastClickedCoord[0] = nx;
 			lastClickedCoord[1] = ny;
 		}
 		break;
 	case RIGHT:
 		mouseButtonsClicked[RIGHT] = !state;
-		if(!state) {
+		if (!state)
+		{
 			lastClickedCoord[0] = nx;
 			lastClickedCoord[1] = ny;
 		}
@@ -492,7 +516,6 @@ void mouseFunction(int button, int state, int mx, int my)
 	default:
 		break;
 	}
-	
 }
 
 void calculateCameraPosition()
@@ -553,8 +576,8 @@ int main(int argc, char **argv)
 	skybox = sphere_create(1500, 40, 40, {1.2, 1.2, 1.2});
 	sphere_bind(skybox, vertexPosLoc3, vertexColLoc3, vertexTexcoordLoc3, vertexNormalLoc3);
 
-	// rover.load();
-	// rover.bind(programId1, vertexPosLoc1, vertexNormalLoc1, vertexColLoc1);
+	rover.load();
+	rover.bind(programId1, vertexPosLoc1, vertexNormalLoc1, vertexColLoc1);
 
 	glClearColor(0, 0, 0, 1.0);
 	glutMainLoop();

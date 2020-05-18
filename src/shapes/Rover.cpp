@@ -215,8 +215,8 @@ void Rover::getWheelRightFrontXZPosition(float *coord)
 void Rover::rotateWheels(int forward)
 {
 	float direction = forward ? 1.0 : -1.0;
-	this->wheelAngle += 1.5 * direction;
-	if(this->wheelAngle >= 360.0)
+	this->wheelAngle += 3.5 * direction;
+	if (this->wheelAngle >= 360.0)
 	{
 		this->wheelAngle = 0.0;
 	}
@@ -225,16 +225,33 @@ void Rover::rotateWheels(int forward)
 void Rover::turnWheels(float angle)
 {
 	int direction = angle >= 0.0 ? 1 : 0;
-	if(direction && this->currentTurnAnimation <= angle)
+	if (direction && this->currentTurnAnimation <= angle)
 	{
-		this->currentTurnAnimation += 0.5;
+		this->currentTurnAnimation += 2;
 		return;
 	}
 
-	if(!direction && this->currentTurnAnimation >= angle)
+	if (!direction && this->currentTurnAnimation >= angle)
 	{
-		this->currentTurnAnimation -= 0.5;
-		return;	
+		this->currentTurnAnimation -= 2;
+		return;
+	}
+}
+
+void Rover::resetTurnWheels()
+{
+	int direction = this->currentTurnAnimation > 0.0 ? 1 : 0;
+
+	if (direction && this->currentTurnAnimation != 0)
+	{
+		this->currentTurnAnimation -= 2;
+		return;
+	}
+
+	if (!direction && this->currentTurnAnimation != 0)
+	{
+		this->currentTurnAnimation += 2;
+		return;
 	}
 }
 
@@ -242,9 +259,14 @@ void Rover::rotateRover(int clock)
 {
 	float direction = clock ? 1.0 : -1.0;
 	this->deg += 0.25 * direction;
-	if(this->deg >= 360.0)
+	if (this->deg >= 360.0)
 	{
 		this->deg = 0.0;
 	}
 	this->rad = this->deg * M_PI / 180;
+}
+
+void Rover::setYawRotation(float angle)
+{
+	this->deg = angle;
 }
