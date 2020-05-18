@@ -16,6 +16,7 @@
 #endif
 
 static inline float toRadians(float deg) { return deg * M_PI / 180.0; }
+static inline float toDeg(float rad) { return rad * 180.0 / M_PI; }
 
 #define RESET 0xFFFFFFFF
 #define NUM_VERTEX_X 512
@@ -330,13 +331,23 @@ static void display()
 
 	// Draw an object to build third person view from it
 	mIdentity(&modelMatrix);
+
 	thirdPersonObj.y = vertexFromXZPosition(terrain, thirdPersonObj.x, thirdPersonObj.z).y;
 	translate(&modelMatrix, thirdPersonObj.x, thirdPersonObj.y, thirdPersonObj.z);
+
 	Vertex normalInXZ = normalFromXZPosition(terrain, thirdPersonObj.x, thirdPersonObj.z);
-	printf("%.2f, %.2f, %.2f\n", thirdPersonObj.x, thirdPersonObj.y, thirdPersonObj.z);
 	glUniformMatrix4fv(modelMatrixLoc1, 1, GL_TRUE, modelMatrix.values);
-	// sphere_draw(sphereRover);
+
 	rover.setPosition(thirdPersonObj.x, thirdPersonObj.y + 0.164, thirdPersonObj.z);
+
+	float roverPitch = toDeg(atan(normalInXZ.z / -normalInXZ.y));
+	float roverRoll = toDeg(atan(normalInXZ.x / -normalInXZ.y));
+
+	float finalRoverPitch = -sin(toRadians(objectYaw)) * roverRoll - cos(toRadians(objectYaw)) * roverPitch;
+	float finalRoverRoll = cos(toRadians(objectYaw)) * roverRoll - sin(toRadians(objectYaw)) * roverPitch;
+
+	rover.rotateRoverPitch(finalRoverPitch);
+	rover.rotateRoverRoll(finalRoverRoll);
 	rover.draw(modelMatrixLoc1);
 
 	// Draw Terrain

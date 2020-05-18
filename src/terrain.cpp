@@ -62,14 +62,14 @@ Terrain terrain_create(int numVertexX, int numVertexZ, int sideLengthX, int side
 			terrain->vertices[i * numVertexX + j].z = z;
 
 			// Test height map with HUE value.
-			Vertex rgb = hueToRgb(terrain->vertices[i * numVertexX + j].y * 240);
-			terrain->colors[i * numVertexX + j].x = rgb.x / 255.0;
-			terrain->colors[i * numVertexX + j].y = rgb.y / 255.0;
-			terrain->colors[i * numVertexX + j].z = rgb.z / 255.0;
+			// Vertex rgb = hueToRgb(terrain->vertices[i * numVertexX + j].y * 240);
+			// terrain->colors[i * numVertexX + j].x = rgb.x / 255.0;
+			// terrain->colors[i * numVertexX + j].y = rgb.y / 255.0;
+			// terrain->colors[i * numVertexX + j].z = rgb.z / 255.0;
 
-			// terrain->colors[i * numVertexX + j].x = 1;
-			// terrain->colors[i * numVertexX + j].y = 1;
-			// terrain->colors[i * numVertexX + j].z = 1;
+			terrain->colors[i * numVertexX + j].x = 1;
+			terrain->colors[i * numVertexX + j].y = 1;
+			terrain->colors[i * numVertexX + j].z = 1;
 
 			terrain->texcoords[i * numVertexX + j].u = ((x / (float)sideLengthX) + 0.5) * 40;
 			terrain->texcoords[i * numVertexX + j].v = ((z / (float)sideLengthZ) + 0.5) * 40;

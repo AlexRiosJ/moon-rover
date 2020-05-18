@@ -94,10 +94,10 @@ void Shape::Load(const char *path)
                 Vec3 vertex = rawVetexes[v];
                 Vec3 normal = rawNormals[vn];
                 Vec3 color;
-                color.x = 1.0;
-                color.y = 0;
-                color.z = 0;
-
+                color.x = 0.8980;
+                color.y = 0.3098;
+                color.z = 0.2705;
+                
                 tmpVertexArray.push_back(vertex);
                 tmpNormalArray.push_back(normal);
                 tmpColorArray.push_back(color);
