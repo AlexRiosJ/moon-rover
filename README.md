@@ -14,3 +14,5 @@ To make it works execute the following commands:
 
 > cd build && make && cd .. && build\main.exe
 ```
+
+![Screenshot](./screenshots/Moon%20Rover.png)
