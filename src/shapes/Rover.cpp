@@ -29,6 +29,10 @@ Rover::Rover()
 	this->wheelLeftFrontOffsetX = 0.27;
 	this->wheelRightFrontOffsetX = -0.27;
 
+	// Bogie animations
+	this->leftBogieDeg = 0.0;
+	this->rightBogieDeg = 0.0;
+
 	// Wheel Z offsets
 	this->wheelsBackOffsetZ = -0.253;
 	this->wheelsMidOffsetZ = 0.002;
@@ -98,6 +102,7 @@ void Rover::draw(GLuint modelLoc)
 	pushMatrix(&modelMatrix);
 
 	translate(&modelMatrix, 0.0247, -0.06163, -0.18007);
+	rotateX(&modelMatrix, this->leftBogieDeg);
 	glUniformMatrix4fv(modelLoc, 1, 1, modelMatrix.values);
 	bogieLeft.Draw();
 
@@ -137,6 +142,7 @@ void Rover::draw(GLuint modelLoc)
 	pushMatrix(&modelMatrix);
 
 	translate(&modelMatrix, -0.0247, -0.06163, -0.18007);
+	rotateX(&modelMatrix, this->rightBogieDeg);
 	glUniformMatrix4fv(modelLoc, 1, 1, modelMatrix.values);
 	bogieRight.Draw();
 
@@ -178,38 +184,38 @@ void Rover::setPosition(float x, float y, float z)
 
 void Rover::getWheelLeftBackXZPosition(float *coord)
 {
-	coord[0] = this->x + this->wheelLeftBackOffsetX;
-	coord[1] = this->z + this->wheelsBackOffsetZ;
+	coord[0] = this->x + cosf(this->deg) * this->wheelLeftBackOffsetX;
+	coord[1] = this->z + sinf(this->deg) * this->wheelsBackOffsetZ;
 }
 
 void Rover::getWheelLeftMidXZPosition(float *coord)
 {
-	coord[0] = this->x + this->wheelLeftMidOffsetX;
-	coord[1] = this->z + this->wheelsMidOffsetZ;
+	coord[0] = this->x + cosf(this->deg) * this->wheelLeftMidOffsetX;
+	coord[1] = this->z + sinf(this->deg) * this->wheelsBackOffsetZ
 }
 
 void Rover::getWheelLeftFrontXZPosition(float *coord)
 {
-	coord[0] = this->x + this->wheelLeftFrontOffsetX;
-	coord[1] = this->z + this->wheelsFrontOffsetZ;
+	coord[0] = this->x + cosf(this->deg) * this->wheelLeftFrontOffsetX;
+	coord[1] = this->z + sinf(this->deg) * this->wheelsBackOffsetZ
 }
 
 void Rover::getWheelRightBackXZPosition(float *coord)
 {
-	coord[0] = this->x + this->wheelRightBackOffsetX;
-	coord[1] = this->z + this->wheelsBackOffsetZ;
+	coord[0] = this->x + cosf(this->deg) * this->wheelRightBackOffsetX;
+	coord[1] = this->z + sinf(this->deg) * this->wheelsBackOffsetZ
 }
 
 void Rover::getWheelRightMidXZPosition(float *coord)
 {
-	coord[0] = this->x + this->wheelRightMidOffsetX;
-	coord[1] = this->z + this->wheelsMidOffsetZ;
+	coord[0] = this->x + cosf(this->deg) * this->wheelRightMidOffsetX;
+	coord[1] = this->z + sinf(this->deg) * this->wheelsBackOffsetZ
 }
 
 void Rover::getWheelRightFrontXZPosition(float *coord)
 {
-	coord[0] = this->x + this->wheelRightFrontOffsetX;
-	coord[1] = this->z + this->wheelsFrontOffsetZ;
+	coord[0] = this->x + cosf(this->deg) * this->wheelRightFrontOffsetX;
+	coord[1] = this->z + sinf(this->deg) * this->wheelsBackOffsetZ
 }
 
 void Rover::rotateWheels(int forward)
@@ -247,4 +253,9 @@ void Rover::rotateRover(int clock)
 		this->deg = 0.0;
 	}
 	this->rad = this->deg * M_PI / 180;
+}
+
+void Rover::setWheelsY(float lf, float lm, float lb, float rf, float rm, float rb)
+{
+	
 }
