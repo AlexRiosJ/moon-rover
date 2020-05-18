@@ -22,6 +22,7 @@ class Rover
         float angleX;
         float angleY;
         float angleZ;
+        float radY;
 
         float wheelAngle;
          
@@ -38,16 +39,16 @@ class Rover
         float wheelLeftMidOffsetX;
         float wheelLeftFrontOffsetX;
 
+        // Bogie animation
+        float leftBogieDeg;
+        float rightBogieDeg;
+
         // Rover position
         float x;
         float y;
         float z;
 
-        // Rover rotation
-        float deg;
-        float rad;
-
-        // For animation
+        // Wheel animation
         float wheelRotation;
         float currentTurnAnimation;
     public:
@@ -72,4 +73,7 @@ class Rover
         void resetTurnWheels();
         void rotateRover(int);
         void setYawRotation(float);
+        void rotateRoverPitch(float deg);
+        void rotateRoverRoll(float deg);
+        void setWheelsY(float lf, float lm, float lb, float rf, float rm, float rb);
 };

@@ -25,7 +25,7 @@ static float materialD[] = {0.5, 0.5, 0.5};
 static float materialS[] = {0.5, 0.5, 0.5};
 static float exponent = 16;
 
-static float rz = 0.0;
+static float rz = -1.0;
 
 static void initShaders()
 {
@@ -99,9 +99,10 @@ static void displayFunc()
 	glUniformMatrix4fv(viewMatrixLoc, 1, 1, viewMatrix.values);
 
 	r.rotateWheels(1);
-	r.rotateRover(1);
+	// r.rotateRover(1);
+	r.rotateRoverRoll(45);
 	r.turnWheels(40);
-	r.setPosition(0, 0, rz -= 0.003);
+	r.setPosition(0, 0, rz);
 	r.draw(modelMatrixLoc);
 
 	glUniformMatrix4fv(viewMatrixLoc, 1, 1, viewMatrix.values);
