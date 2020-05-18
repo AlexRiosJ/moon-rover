@@ -15,11 +15,11 @@ Rover::Rover()
 	this->y = 0.0;
 	this->z = 0.0;
 
-	this->deg = M_PI;
+	this->deg = 0.0;
+	this->rad = 0.0;
 
-	this->wheelAngle = 0;
-	this->currentDirection = 0;
-	this->currentDirectionAnimation = 0;
+	this->wheelAngle = 0.0;
+	this->currentTurnAnimation = 0.0;
 
 	// Wheels X offsets
 	this->wheelLeftMidOffsetX = 0.3005;
@@ -109,7 +109,7 @@ void Rover::draw(GLuint modelLoc)
 
 	popMatrix(&modelMatrix);
 	translate(&modelMatrix, 0.0791, -0.09844, -0.14783);
-	rotateY(&modelMatrix, -currentDirectionAnimation);
+	rotateY(&modelMatrix, -currentTurnAnimation);
 	glUniformMatrix4fv(modelLoc, 1, 1, modelMatrix.values);
 	driveLeftBack.Draw();
 
@@ -120,7 +120,7 @@ void Rover::draw(GLuint modelLoc)
 
 	popMatrix(&modelMatrix);
 	translate(&modelMatrix, 0.1038, -0.16007, 0.2101);
-	rotateY(&modelMatrix, currentDirectionAnimation);
+	rotateY(&modelMatrix, currentTurnAnimation);
 	glUniformMatrix4fv(modelLoc, 1, 1, modelMatrix.values);
 	driveLeftFront.Draw();
 
@@ -148,7 +148,7 @@ void Rover::draw(GLuint modelLoc)
 
 	popMatrix(&modelMatrix);
 	translate(&modelMatrix, -0.0791, -0.09844, -0.14783);
-	rotateY(&modelMatrix, -currentDirectionAnimation);
+	rotateY(&modelMatrix, -currentTurnAnimation);
 	glUniformMatrix4fv(modelLoc, 1, 1, modelMatrix.values);
 	driveRightBack.Draw();
 
@@ -159,7 +159,7 @@ void Rover::draw(GLuint modelLoc)
 
 	popMatrix(&modelMatrix);
 	translate(&modelMatrix, -0.1038, -0.16007, 0.2101);
-	rotateY(&modelMatrix, currentDirectionAnimation);
+	rotateY(&modelMatrix, currentTurnAnimation);
 	glUniformMatrix4fv(modelLoc, 1, 1, modelMatrix.values);
 	driveRightFront.Draw();
 
@@ -222,26 +222,29 @@ void Rover::rotateWheels(int forward)
 	}
 }
 
-void Rover::setDirection(float angle)
+void Rover::turnWheels(float angle)
 {
-	/*
-	if (this->currentDirectionAnimation - angle) 
+	int direction = angle >= 0.0 ? 1 : 0;
+	if(direction && this->currentTurnAnimation <= angle)
 	{
-		this->currentDirection = angle;
+		this->currentTurnAnimation += 0.5;
 		return;
 	}
-	*/
-	float dt = fabs(this->currentDirection - angle) / 100.0;
-	this->currentDirectionAnimation += dt;
-	std::cout << this->currentDirectionAnimation << " " << this->currentDirectionAnimation - angle << "\n";
+
+	if(!direction && this->currentTurnAnimation >= angle)
+	{
+		this->currentTurnAnimation -= 0.5;
+		return;	
+	}
 }
 
-void Rover::setRotation(float angle) 
+void Rover::rotateRover(int clock)
 {
-	this->deg = angle;
-}
-
-float Rover::getDirection()
-{
-	return this->currentDirectionAnimation;
+	float direction = clock ? 1.0 : -1.0;
+	this->deg += 0.25 * direction;
+	if(this->deg >= 360.0)
+	{
+		this->deg = 0.0;
+	}
+	this->rad = this->deg * M_PI / 180;
 }
