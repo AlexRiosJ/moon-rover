@@ -62,14 +62,14 @@ Terrain terrain_create(int numVertexX, int numVertexZ, int sideLengthX, int side
 			terrain->vertices[i * numVertexX + j].z = z;
 
 			// Test height map with HUE value.
-			// Vertex rgb = hueToRgb(terrain->vertices[i * numVertexX + j].y * 240);
-			// terrain->colors[i * numVertexX + j].x = rgb.x / 255.0;
-			// terrain->colors[i * numVertexX + j].y = rgb.y / 255.0;
-			// terrain->colors[i * numVertexX + j].z = rgb.z / 255.0;
+			Vertex rgb = hueToRgb(terrain->vertices[i * numVertexX + j].y * 240);
+			terrain->colors[i * numVertexX + j].x = rgb.x / 255.0;
+			terrain->colors[i * numVertexX + j].y = rgb.y / 255.0;
+			terrain->colors[i * numVertexX + j].z = rgb.z / 255.0;
 
-			terrain->colors[i * numVertexX + j].x = 1;
-			terrain->colors[i * numVertexX + j].y = 1;
-			terrain->colors[i * numVertexX + j].z = 1;
+			// terrain->colors[i * numVertexX + j].x = 1;
+			// terrain->colors[i * numVertexX + j].y = 1;
+			// terrain->colors[i * numVertexX + j].z = 1;
 
 			terrain->texcoords[i * numVertexX + j].u = ((x / (float)sideLengthX) + 0.5) * 40;
 			terrain->texcoords[i * numVertexX + j].v = ((z / (float)sideLengthZ) + 0.5) * 40;
@@ -223,4 +223,49 @@ Vertex hueToRgb(float H)
 	}
 
 	return rgb;
+}
+
+Vertex vertexFromXZPosition(Terrain terrain, float x, float z)
+{
+	float dx = (float)terrain->sideLengthX / (float)(terrain->numVertexX - 1);
+	float dz = (float)terrain->sideLengthZ / (float)(terrain->numVertexZ - 1);
+	Vertex vertex = {x, 0, z};
+
+	float vX = x + terrain->sideLengthX / 2.0;
+	float vZ = z + terrain->sideLengthZ / 2.0;
+
+	int xoff = vX >= 0 ? vX / terrain->sideLengthX : vX / terrain->sideLengthX - 1;
+	int zoff = vZ >= 0 ? vZ / terrain->sideLengthZ : vZ / terrain->sideLengthZ - 1;
+
+	int i = ceil(((z + (terrain->sideLengthZ / 2)) - terrain->sideLengthZ * zoff) * (1 / dz));
+	int j = ceil(((x + (terrain->sideLengthX / 2)) - terrain->sideLengthX * xoff) * (1 / dx));
+	
+	int index = i * terrain->numVertexX + j;
+
+	// printf("%d, %d, %d\n", i, j, index);
+
+	vertex.y = terrain->vertices[index].y;
+
+	return vertex;
+}
+
+Vertex normalFromXZPosition(Terrain terrain, float x, float z)
+{
+	float dx = (float)terrain->sideLengthX / (float)(terrain->numVertexX - 1);
+	float dz = (float)terrain->sideLengthZ / (float)(terrain->numVertexZ - 1);
+
+	float vX = x + terrain->sideLengthX / 2.0;
+	float vZ = z + terrain->sideLengthZ / 2.0;
+
+	int xoff = vX >= 0 ? vX / terrain->sideLengthX : vX / terrain->sideLengthX - 1;
+	int zoff = vZ >= 0 ? vZ / terrain->sideLengthZ : vZ / terrain->sideLengthZ - 1;
+
+	int i = ceil(((z + (terrain->sideLengthZ / 2)) - terrain->sideLengthZ * zoff) * (1 / dz));
+	int j = ceil(((x + (terrain->sideLengthX / 2)) - terrain->sideLengthX * xoff) * (1 / dx));
+	
+	int index = i * terrain->numVertexX + j;
+
+	// printf("%d, %d, %d\n", i, j, index);
+
+	return normalize(terrain->normals[index]);
 }

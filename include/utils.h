@@ -32,5 +32,6 @@ void processIndexBuffer(GLuint bufferId, void *array, int arraySize, int restart
 
 Vertex subtractVertex(Vertex origin, Vertex dest);
 Vertex crossProduct(Vertex A, Vertex B);
+Vertex normalize(Vertex v);
 
 #endif /* UTILS_H_ */

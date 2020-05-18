@@ -68,7 +68,7 @@ float cameraSpeed = 0.05;
 float distanceFromPlayer = -2.5;
 float angleAroundPlayer = (180.0 / 0.08);
 
-Vertex thirdPersonObj = {0, 1, -1.0};
+Vertex thirdPersonObj = {0, 1, 0};
 float objectYaw = 0.0; // object yaw
 float objectPitch = 0.0;
 float objectSpeed = 0.05;
@@ -307,19 +307,22 @@ static void display()
 
 	// Draw an object to build third person view from it
 	mIdentity(&modelMatrix);
-	translate(&modelMatrix, thirdPersonObj.x, thirdPersonObj.y, thirdPersonObj.z);
+	float roverHeight = vertexFromXZPosition(terrain, thirdPersonObj.x, thirdPersonObj.z).y;
+	translate(&modelMatrix, thirdPersonObj.x, roverHeight, thirdPersonObj.z);
 	rotateY(&modelMatrix, objectYaw);
+	Vertex normalInXZ = normalFromXZPosition(terrain, thirdPersonObj.x, thirdPersonObj.z);
+	printf("%.2f, %.2f, %.2f\n", normalInXZ.x, normalInXZ.y, normalInXZ.z);
 	glUniformMatrix4fv(modelMatrixLoc1, 1, GL_TRUE, modelMatrix.values);
-	// sphere_draw(sphereRover);
-	rover.setPosition(thirdPersonObj.x, thirdPersonObj.y, thirdPersonObj.z);
-	rover.draw(modelMatrixLoc1);
+	sphere_draw(sphereRover);
+	// rover.setPosition(thirdPersonObj.x, vertexFromXZPosition(terrain, thirdPersonObj.x, thirdPersonObj.z).y, thirdPersonObj.z);
+	// rover.draw(modelMatrixLoc1);
 
 	// Draw Terrain
 	mIdentity(&modelMatrix);
 	glActiveTexture(GL_TEXTURE0 + 0);
 	glUniform1i(texturesLocs[0], 0);
 	glBindTexture(GL_TEXTURE_2D, textures[0]);
-	drawTerrain(cameraPosition.x / SIDE_LENGTH_X, cameraPosition.z / SIDE_LENGTH_Z);
+	drawTerrain(thirdPersonObj.x / SIDE_LENGTH_X, thirdPersonObj.z / SIDE_LENGTH_Z);
 
 	// ---------------- MVP to shader 2 (earth)
 	glUseProgram(programId2);
@@ -549,8 +552,8 @@ int main(int argc, char **argv)
 	skybox = sphere_create(1500, 40, 40, {1.2, 1.2, 1.2});
 	sphere_bind(skybox, vertexPosLoc3, vertexColLoc3, vertexTexcoordLoc3, vertexNormalLoc3);
 
-	rover.load();
-	rover.bind(programId1, vertexPosLoc1, vertexNormalLoc1, vertexColLoc1);
+	// rover.load();
+	// rover.bind(programId1, vertexPosLoc1, vertexNormalLoc1, vertexColLoc1);
 
 	glClearColor(0, 0, 0, 1.0);
 	glutMainLoop();

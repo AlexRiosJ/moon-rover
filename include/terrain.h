@@ -9,4 +9,7 @@ Terrain terrain_create(int numVertexX, int numVertexZ, int sideLengthX, int side
 void terrain_bind(Terrain terrain, GLuint vertexPosLoc, GLuint vertexColLoc, GLuint vertexTexcoordLoc, GLuint vertexNormalLoc);
 void terrain_draw(Terrain terrain);
 
+Vertex vertexFromXZPosition(Terrain terrain, float x, float z);
+Vertex normalFromXZPosition(Terrain terrain, float x, float z);
+
 #endif /* TERRAIN_H_ */

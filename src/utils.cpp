@@ -1,4 +1,5 @@
 #include "utils.h"
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -109,4 +110,10 @@ Vertex subtractVertex(Vertex origin, Vertex dest)
 Vertex crossProduct(Vertex A, Vertex B)
 {
 	return {A.y * B.z - A.z * B.y, -(A.x * B.z - A.z * B.x), A.x * B.y - A.y * B.x};
+}
+
+Vertex normalize(Vertex v)
+{
+	float mag = sqrt((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
+	return {v.x / mag, v.y / mag, v.z / mag};
 }
