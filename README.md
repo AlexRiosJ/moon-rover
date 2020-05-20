@@ -1,6 +1,21 @@
 # Moon Rover
 
-You must have installed CMake in your PC.
+Moon rover simulator implemented with OpenGL, GLSL and C++.
+
+#### Used Techniques
+* Terrain generation
+* Textures, Phong Lighting, Animations
+* OBJ Files
+* Third Person Perspective Camera
+
+#### Made by
+* [Alejandro Rios](https://github.com/AlexRiosJ)
+* [Dario Arias](https://github.com/DarioAle)
+* [Carlos Soto](https://github.com/CarlosSoPe6)
+
+## Setup
+
+Ensure you have **CMake** installed.
 
 To make it works execute the following commands:
 
