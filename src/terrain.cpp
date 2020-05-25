@@ -58,7 +58,14 @@ Terrain terrain_create(int numVertexX, int numVertexZ, int sideLengthX, int side
 		for (int j = 0; j < numVertexX; j++)
 		{
 			terrain->vertices[i * numVertexX + j].x = x;
-			terrain->vertices[i * numVertexX + j].y = Perlin_Get2d(x, z, 0.1, 20) * ((-cos(j * M_PI * 2 / numVertexX) + 1) + ((-cos(j * M_PI * 2 / numVertexX * 5) + 1) / 5.0) + ((-cos(j * M_PI * 2 / numVertexX * 7) + 1) / 7.0)) * ((-cos(i * M_PI * 2 / numVertexZ) + 1) + ((-cos(i * M_PI * 2 / numVertexZ * 5) + 1) / 5.0) + ((-cos(i * M_PI * 2 / numVertexZ * 7) + 1) / 7.0)) * 0.25;
+			terrain->vertices[i * numVertexX + j].y = Perlin_Get2d(x, z, 0.1, 20) * 
+													  ((-cos(j * M_PI * 2 / numVertexX) + 1) + 
+													  ((-cos(j * M_PI * 2 / numVertexX * 5) + 1) / 5.0) + 
+													  ((-cos(j * M_PI * 2 / numVertexX * 7) + 1) / 7.0)) * 
+													  
+													  ((-cos(i * M_PI * 2 / numVertexZ) + 1) + 
+													  ((-cos(i * M_PI * 2 / numVertexZ * 5) + 1) / 5.0) + 
+													  ((-cos(i * M_PI * 2 / numVertexZ * 7) + 1) / 7.0)) * 0.25;
 			terrain->vertices[i * numVertexX + j].z = z;
 
 			// Test height map with HUE value.
