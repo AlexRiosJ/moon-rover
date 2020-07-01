@@ -13,6 +13,9 @@ Moon rover simulator implemented with OpenGL, GLSL and C++.
 * [Dario Arias](https://github.com/DarioAle)
 * [Carlos Soto](https://github.com/CarlosSoPe6)
 
+### Demonstration
+* For a demonstration, please [watch the video](https://youtu.be/I_dPSwUqFRQ) on YouTube.
+
 ## Setup
 
 Ensure you have **CMake** installed.
