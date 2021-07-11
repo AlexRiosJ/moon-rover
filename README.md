@@ -23,14 +23,14 @@ Ensure you have **CMake** installed.
 To make it works execute the following commands:
 
 ``` shell
-> mkdir build
-> cd build
-\build> cmake -G "MinGW Makefiles" ..
-\build> make
-> cd ..
-> .\build\main.exe
+mkdir build
+cd build
+cmake -G "MinGW Makefiles" ..
+make
+cd ..
+.\build\main.exe
 
-> cd build && make && cd .. && build\main.exe
+cd build && make && cd .. && build\main.exe
 ```
 
 ![Screenshot](./screenshots/Moon%20Rover.png)
