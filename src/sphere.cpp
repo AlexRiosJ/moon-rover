@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <time.h>
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -26,7 +25,6 @@ struct strSphere
 
 Sphere sphere_create(float radius, int parallels, int meridians, Vertex sphereColor)
 {
-	srand(time(NULL));
 	int totalPositionVertices = parallels * (meridians + 1) * 2;
 	int totalColors = parallels * (meridians + 1) * 2;
 	int totalTexcoords = parallels * (meridians + 1) * 2;
@@ -145,8 +143,8 @@ void sphere_bind(Sphere sphere, GLuint vertexPosLoc, GLuint vertexColLoc, GLuint
 	glEnableVertexAttribArray(vertexNormalLoc);
 	glVertexAttribPointer(vertexNormalLoc, 3, GL_FLOAT, 0, 0, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, sphere->sphereBuffer[4]);
-	glBufferData(GL_ARRAY_BUFFER, totalIndexes * sizeof(GLuint), sphere->indexBuffer, GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphere->sphereBuffer[4]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, totalIndexes * sizeof(GLuint), sphere->indexBuffer, GL_STATIC_DRAW);
 	glPrimitiveRestartIndex(RESET);
 	glEnable(GL_PRIMITIVE_RESTART);
 }
@@ -156,5 +154,5 @@ void sphere_draw(Sphere sphere)
 	glBindVertexArray(sphere->sphereVA);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphere->sphereBuffer[4]);
 	int totalIndexes = sphere->parallels * ((sphere->meridians + 1) * 2 + 1);
-	glDrawElements(GL_TRIANGLE_STRIP, totalIndexes * sizeof(GLuint), GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLE_STRIP, totalIndexes, GL_UNSIGNED_INT, 0);
 }

@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <time.h>
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -15,7 +14,7 @@ Vertex hueToRgb(float H);
 struct strTerrain
 {
 	GLuint terrainVA;
-	GLuint terrainBuffer[4];
+	GLuint terrainBuffer[5];
 	int numVertexX;
 	int numVertexZ;
 	int sideLengthX;
@@ -51,7 +50,6 @@ Terrain terrain_create(int numVertexX, int numVertexZ, int sideLengthX, int side
 	float z = -sideLengthZ / 2.0;
 	float dx = (float)sideLengthX / (float)(numVertexX - 1);
 	float dz = (float)sideLengthZ / (float)(numVertexZ - 1);
-	srand(time(NULL));
 	// printf("%.2f, %.2f, %.2f, %.2f\n", x, z, dx, dz);
 	for (int i = 0; i < numVertexZ; i++)
 	{
@@ -155,7 +153,7 @@ void terrain_bind(Terrain terrain, GLuint vertexPosLoc, GLuint vertexColLoc, GLu
 
 	glGenVertexArrays(1, &terrain->terrainVA);
 	glBindVertexArray(terrain->terrainVA);
-	glGenBuffers(4, terrain->terrainBuffer);
+	glGenBuffers(5, terrain->terrainBuffer);
 
 	glBindBuffer(GL_ARRAY_BUFFER, terrain->terrainBuffer[0]);
 	glBufferData(GL_ARRAY_BUFFER, totalPositionVertices * sizeof(Vertex), terrain->vertices, GL_STATIC_DRAW);
@@ -177,8 +175,8 @@ void terrain_bind(Terrain terrain, GLuint vertexPosLoc, GLuint vertexColLoc, GLu
 	glEnableVertexAttribArray(vertexNormalLoc);
 	glVertexAttribPointer(vertexNormalLoc, 3, GL_FLOAT, 0, 0, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, terrain->terrainBuffer[4]);
-	glBufferData(GL_ARRAY_BUFFER, totalIndexes * sizeof(GLuint), terrain->indexBuffer, GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, terrain->terrainBuffer[4]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, totalIndexes * sizeof(GLuint), terrain->indexBuffer, GL_STATIC_DRAW);
 	glPrimitiveRestartIndex(RESET);
 	glEnable(GL_PRIMITIVE_RESTART);
 }
@@ -188,7 +186,7 @@ void terrain_draw(Terrain terrain)
 	glBindVertexArray(terrain->terrainVA);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, terrain->terrainBuffer[4]);
 	int totalIndexes = (terrain->numVertexX - 1) * (terrain->numVertexZ * 2 + 1);
-	glDrawElements(GL_TRIANGLE_STRIP, totalIndexes * sizeof(GLuint), GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLE_STRIP, totalIndexes, GL_UNSIGNED_INT, 0);
 }
 
 Vertex hueToRgb(float H)

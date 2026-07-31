@@ -6,6 +6,11 @@
 const char *loadShader(const char *filename)
 {
 	FILE *shaderFile = fopen(filename, "r");
+	if (!shaderFile)
+	{
+		fprintf(stderr, "Could not open shader '%s'\n", filename);
+		return NULL;
+	}
 	const int BUFFER_SIZE = 256;
 	char buffer[BUFFER_SIZE];
 	//	Count number of characters in source file
@@ -43,9 +48,12 @@ GLuint compileShader(const char *filename, GLuint shaderType)
 {
 	//	char const* source = "void main() { ... ";
 	char const *source = loadShader(filename);
+	if (!source)
+		return 0;
 	GLuint shaderId = glCreateShader(shaderType);
 	glShaderSource(shaderId, 1, &source, NULL);
 	glCompileShader(shaderId);
+	free((void *)source);
 	return shaderId;
 }
 
@@ -61,6 +69,7 @@ bool shaderCompiled(GLuint shaderId)
 	GLchar *errors = (GLchar *)malloc(sizeof(int) * maxLength);
 	glGetShaderInfoLog(shaderId, maxLength, &maxLength, errors);
 	puts(errors);
+	free(errors);
 	return false;
 }
 
@@ -68,9 +77,20 @@ bool loadBMP(const char *filename, unsigned char **pdata, unsigned int *width, u
 {
 	unsigned char header[54];
 	FILE *file = fopen(filename, "rb");
-	fread(header, 1, 54, file);
+	if (!file)
+	{
+		fprintf(stderr, "Could not open texture '%s'\n", filename);
+		return false;
+	}
+	if (fread(header, 1, 54, file) != 54)
+	{
+		fclose(file);
+		printf("Not a correct BMP file\n");
+		return false;
+	}
 	if (header[0] != 'B' || header[1] != 'M')
 	{
+		fclose(file);
 		printf("Not a correct BMP file\n");
 		return false;
 	}

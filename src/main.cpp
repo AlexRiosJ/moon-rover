@@ -131,21 +131,25 @@ static void setupTextures()
 	texturesLocs[4] = glGetUniformLocation(programId3, "skyboxTexture");
 
 	glUseProgram(programId1);
-	glUniform1i(texturesLocs[0], textures[0]);
+	glUniform1i(texturesLocs[0], 0);
 	glUseProgram(programId2);
-	glUniform1i(texturesLocs[1], textures[1]);
-	glUniform1i(texturesLocs[2], textures[2]);
-	glUniform1i(texturesLocs[3], textures[3]);
+	glUniform1i(texturesLocs[1], 1);
+	glUniform1i(texturesLocs[2], 2);
+	glUniform1i(texturesLocs[3], 3);
 	glUseProgram(programId3);
-	glUniform1i(texturesLocs[4], textures[4]);
+	glUniform1i(texturesLocs[4], 4);
 }
 
 static void initShaders()
 {
 	GLuint vShader = compileShader("shaders/projection.vsh", GL_VERTEX_SHADER);
+	if (!vShader)
+		return;
 	if (!shaderCompiled(vShader))
 		return;
 	GLuint fShader = compileShader("shaders/color.fsh", GL_FRAGMENT_SHADER);
+	if (!fShader)
+		return;
 	if (!shaderCompiled(fShader))
 		return;
 
@@ -181,9 +185,13 @@ static void initShaders()
 	glUniform1f(exponentLoc, exponent);
 
 	GLuint vShader2 = compileShader("shaders/earth.vsh", GL_VERTEX_SHADER);
+	if (!vShader2)
+		return;
 	if (!shaderCompiled(vShader2))
 		return;
 	GLuint fShader2 = compileShader("shaders/earth.fsh", GL_FRAGMENT_SHADER);
+	if (!fShader2)
+		return;
 	if (!shaderCompiled(fShader2))
 		return;
 	programId2 = glCreateProgram();
@@ -218,9 +226,13 @@ static void initShaders()
 	glUniform1f(exponentLoc, exponent);
 
 	GLuint vShader3 = compileShader("shaders/skybox.vsh", GL_VERTEX_SHADER);
+	if (!vShader3)
+		return;
 	if (!shaderCompiled(vShader3))
 		return;
 	GLuint fShader3 = compileShader("shaders/skybox.fsh", GL_FRAGMENT_SHADER);
+	if (!fShader3)
+		return;
 	if (!shaderCompiled(fShader3))
 		return;
 	programId3 = glCreateProgram();
@@ -375,14 +387,12 @@ static void display()
 	glBindTexture(GL_TEXTURE_2D, textures[1]);
 
 	// Apply clouds texture
-	glEnable(GL_BLEND);
 	glActiveTexture(GL_TEXTURE0 + 3);
 	glUniform1i(texturesLocs[3], 3);
 	glBindTexture(GL_TEXTURE_2D, textures[3]);
 	glActiveTexture(GL_TEXTURE0 + 2);
 	glUniform1i(texturesLocs[2], 2);
 	glBindTexture(GL_TEXTURE_2D, textures[2]);
-	glDisable(GL_BLEND);
 
 	static float angleEarth = -45;
 	static float angleSkybox = -45;

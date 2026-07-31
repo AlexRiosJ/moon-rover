@@ -17,4 +17,4 @@ typedef PlayerStr* Player;
 Player createPlayer(Vertex position, float pitch, float yaw, float roll, float speed);
 void printPlayer(Player player);
 
-#endif  // PERLIN_H
+#endif  // PLAYER_H

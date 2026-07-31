@@ -24,4 +24,4 @@ Camera createCamera(Player player, Vertex position, float pitch, float yaw, floa
 void calculateCameraPosition(Camera);
 void printCamera(Camera);
 
-#endif  // PERLIN_H
+#endif  // CAMERA_H

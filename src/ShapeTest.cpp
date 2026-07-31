@@ -30,9 +30,13 @@ static float rz = -1.0;
 static void initShaders()
 {
 	GLuint vShader = compileShader("shaders/Gouraud.vsh", GL_VERTEX_SHADER);
+	if (!vShader)
+		return;
 	if (!shaderCompiled(vShader))
 		return;
 	GLuint fShader = compileShader("shaders/modelColor.fsh", GL_FRAGMENT_SHADER);
+	if (!fShader)
+		return;
 	if (!shaderCompiled(fShader))
 		return;
 	programId1 = glCreateProgram();
