@@ -38,11 +38,23 @@ que el ciclo se cierre.
    implementar. Tienes dos vias:
    - **Sesion local:** crea una sesion hija con el agente `implementer`. Usala
      cuando haga falta compilar de verdad en Windows (MinGW + OpenGL).
-   - **Agente en la nube:** asigna el issue a Copilot para que trabaje solo.
-     Debes forzar la base branch a `main`:
+   - **Agente en la nube:** lanza una tarea a Copilot para que trabaje solo.
+     Debes forzar la base branch a `main`, porque por defecto usaria `master`:
      ```bash
-     gh agent-task create --base main "Implementa el issue #<N>: <resumen>"
+     gh api --method POST "/agents/repos/AlexRiosJ/moon-rover/tasks" \
+       --input tarea.json   # { "prompt": "...", "base_ref": "main" }
      ```
+     No uses `gh agent-task create`: exige un token OAuth interactivo y falla
+     cuando el token viene por variable de entorno.
+
+     El agente en la nube **no se pone las etiquetas a si mismo**, pero no hace
+     falta que se las pongas: el workflow de automatizacion detecta a
+     `copilot-swe-agent` como autor y se las aplica solo.
+
+     Ten en cuenta que sus PRs pueden quedar en `action_required` si el ajuste
+     *Settings > Copilot > Cloud agent > Actions workflow approval* sigue
+     exigiendo aprobacion manual. Eso solo lo desbloquea un humano desde la
+     interfaz; la API `/actions/runs/{id}/approve` devuelve 403 en estos casos.
 6. **Cerrar el ciclo.** Un PR con las etiquetas `ai-generated` y `auto-merge`
    dispara la revision y el merge automaticos. Comprueba que ocurrio.
 
