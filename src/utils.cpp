@@ -91,6 +91,99 @@ bool shaderCompiled(GLuint shaderId)
 	return false;
 }
 
+static bool programLinked(GLuint programId, const char *vertexShaderFile, const char *fragmentShaderFile)
+{
+	GLint params;
+	glGetProgramiv(programId, GL_LINK_STATUS, &params);
+	if (params == GL_TRUE)
+		return true;
+
+	fprintf(stderr, "Error: could not link the program built from \"%s\" and \"%s\"\n", vertexShaderFile, fragmentShaderFile);
+
+	GLint maxLength = 0;
+	glGetProgramiv(programId, GL_INFO_LOG_LENGTH, &maxLength);
+	if (maxLength > 0)
+	{
+		GLchar *errors = (GLchar *)malloc(sizeof(GLchar) * maxLength);
+		if (errors != NULL)
+		{
+			glGetProgramInfoLog(programId, maxLength, &maxLength, errors);
+			puts(errors);
+			free(errors);
+		}
+	}
+	return false;
+}
+
+static GLint requiredAttribLocation(GLuint programId, const char *name)
+{
+	GLint location = glGetAttribLocation(programId, name);
+	if (location < 0)
+		fprintf(stderr, "Warning: attribute \"%s\" is not active in shader program %u\n", name, programId);
+	return location;
+}
+
+GLint requiredUniformLocation(GLuint programId, const char *name)
+{
+	GLint location = glGetUniformLocation(programId, name);
+	if (location < 0)
+		fprintf(stderr, "Warning: uniform \"%s\" is not active in shader program %u\n", name, programId);
+	return location;
+}
+
+bool createShaderProgram(ShaderProgram *program, const char *vertexShaderFile, const char *fragmentShaderFile)
+{
+	program->id = 0;
+	program->vertexPosLoc = -1;
+	program->vertexColLoc = -1;
+	program->vertexTexcoordLoc = -1;
+	program->vertexNormalLoc = -1;
+	program->modelMatrixLoc = -1;
+	program->viewMatrixLoc = -1;
+	program->projMatrixLoc = -1;
+	program->cameraLoc = -1;
+
+	GLuint vShader = compileShader(vertexShaderFile, GL_VERTEX_SHADER);
+	GLuint fShader = compileShader(fragmentShaderFile, GL_FRAGMENT_SHADER);
+	if (!shaderCompiled(vShader) || !shaderCompiled(fShader))
+	{
+		fprintf(stderr, "Error: could not build the program from \"%s\" and \"%s\"\n", vertexShaderFile, fragmentShaderFile);
+		glDeleteShader(vShader);
+		glDeleteShader(fShader);
+		return false;
+	}
+
+	GLuint programId = glCreateProgram();
+	glAttachShader(programId, vShader);
+	glAttachShader(programId, fShader);
+	glLinkProgram(programId);
+	glDetachShader(programId, vShader);
+	glDetachShader(programId, fShader);
+	glDeleteShader(vShader);
+	glDeleteShader(fShader);
+
+	if (!programLinked(programId, vertexShaderFile, fragmentShaderFile))
+	{
+		glDeleteProgram(programId);
+		return false;
+	}
+
+	glUseProgram(programId);
+
+	program->id = programId;
+	program->vertexPosLoc = requiredAttribLocation(programId, "vertexPosition");
+	program->vertexColLoc = requiredAttribLocation(programId, "vertexColor");
+	program->vertexTexcoordLoc = requiredAttribLocation(programId, "vertexTexcoord");
+	program->vertexNormalLoc = requiredAttribLocation(programId, "vertexNormal");
+	program->modelMatrixLoc = requiredUniformLocation(programId, "modelMatrix");
+	program->viewMatrixLoc = requiredUniformLocation(programId, "viewMatrix");
+	program->projMatrixLoc = requiredUniformLocation(programId, "projectionMatrix");
+	// Unlit programs have no camera uniform; glUniform ignores the -1 location.
+	program->cameraLoc = glGetUniformLocation(programId, "camera");
+
+	return true;
+}
+
 bool loadBMP(const char *filename, unsigned char **pdata, unsigned int *width, unsigned int *height)
 {
 	unsigned char header[54];

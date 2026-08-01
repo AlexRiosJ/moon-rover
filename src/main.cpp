@@ -39,34 +39,17 @@ typedef enum
 	BACK_WHEEL
 } MouseButton;
 
-typedef struct
-{
-	GLuint id;
-	GLuint vertexPosLoc;
-	GLuint vertexColLoc;
-	GLuint vertexTexCoord;
-	GLuint vertexNormal;
-	GLuint modelMatrix;
-	GLuint viewMatrix;
-	GLuint projectionMatrix;
-
-} ShaderProgramLocationVariables;
-
 unsigned char keys[256];
 bool mouseButtonsClicked[5] = {};
 float lastClickedCoord[2] = {};
 
-static GLuint programId1, vertexPosLoc1, vertexColLoc1, vertexTexcoordLoc1, vertexNormalLoc1, modelMatrixLoc1, viewMatrixLoc1, projMatrixLoc1;
-static GLuint programId2, vertexPosLoc2, vertexColLoc2, vertexTexcoordLoc2, vertexNormalLoc2, modelMatrixLoc2, viewMatrixLoc2, projMatrixLoc2;
-static GLuint programId3, vertexPosLoc3, vertexColLoc3, vertexTexcoordLoc3, vertexNormalLoc3, modelMatrixLoc3, viewMatrixLoc3, projMatrixLoc3;
+static ShaderProgram terrainProgram, earthProgram, skyboxProgram;
 static Mat4 modelMatrix, viewMatrix, projectionMatrix;
 
 static GLuint texturesLocs[5];
 
 static Player player;
 static Camera camera;
-
-static GLuint ambientLightLoc, diffuseLightLoc, lightPositionLoc, materialALoc, materialDLoc, materialSLoc, exponentLoc, cameraLoc;
 
 static float ambientLight[] = {0, 0, 0};
 static float materialA[] = {0.5, 0.5, 0.5};
@@ -117,118 +100,46 @@ static bool initTextures()
 
 static void setupTextures()
 {
-	texturesLocs[0] = glGetUniformLocation(programId1, "moonTexture");
-	texturesLocs[1] = glGetUniformLocation(programId2, "earthTexture");
-	texturesLocs[2] = glGetUniformLocation(programId2, "earthCloudsTexture");
-	texturesLocs[3] = glGetUniformLocation(programId2, "earthSpecularTexture");
-	texturesLocs[4] = glGetUniformLocation(programId3, "skyboxTexture");
+	texturesLocs[0] = glGetUniformLocation(terrainProgram.id, "moonTexture");
+	texturesLocs[1] = glGetUniformLocation(earthProgram.id, "earthTexture");
+	texturesLocs[2] = glGetUniformLocation(earthProgram.id, "earthCloudsTexture");
+	texturesLocs[3] = glGetUniformLocation(earthProgram.id, "earthSpecularTexture");
+	texturesLocs[4] = glGetUniformLocation(skyboxProgram.id, "skyboxTexture");
 
-	glUseProgram(programId1);
+	glUseProgram(terrainProgram.id);
 	glUniform1i(texturesLocs[0], textures[0]);
-	glUseProgram(programId2);
+	glUseProgram(earthProgram.id);
 	glUniform1i(texturesLocs[1], textures[1]);
 	glUniform1i(texturesLocs[2], textures[2]);
 	glUniform1i(texturesLocs[3], textures[3]);
-	glUseProgram(programId3);
+	glUseProgram(skyboxProgram.id);
 	glUniform1i(texturesLocs[4], textures[4]);
+}
+
+static void setupLighting(const ShaderProgram *program)
+{
+	glUseProgram(program->id);
+	glUniform3fv(requiredUniformLocation(program->id, "ambientLight"), 1, ambientLight);
+	glUniform3fv(requiredUniformLocation(program->id, "diffuseLight"), 1, diffuseLight);
+	glUniform3fv(requiredUniformLocation(program->id, "lightPosition"), 1, lightPosition);
+	glUniform3fv(requiredUniformLocation(program->id, "materialA"), 1, materialA);
+	glUniform3fv(requiredUniformLocation(program->id, "materialD"), 1, materialD);
+	glUniform3fv(requiredUniformLocation(program->id, "materialS"), 1, materialS);
+	glUniform1f(requiredUniformLocation(program->id, "exponent"), exponent);
 }
 
 static bool initShaders()
 {
-	GLuint vShader = compileShader("shaders/projection.vsh", GL_VERTEX_SHADER);
-	if (!shaderCompiled(vShader))
+	if (!createShaderProgram(&terrainProgram, "shaders/projection.vsh", "shaders/color.fsh"))
 		return false;
-	GLuint fShader = compileShader("shaders/color.fsh", GL_FRAGMENT_SHADER);
-	if (!shaderCompiled(fShader))
+	setupLighting(&terrainProgram);
+
+	if (!createShaderProgram(&earthProgram, "shaders/earth.vsh", "shaders/earth.fsh"))
 		return false;
+	setupLighting(&earthProgram);
 
-	programId1 = glCreateProgram();
-	glAttachShader(programId1, vShader);
-	glAttachShader(programId1, fShader);
-	glLinkProgram(programId1);
-	glUseProgram(programId1);
-
-	vertexPosLoc1 = glGetAttribLocation(programId1, "vertexPosition");
-	vertexColLoc1 = glGetAttribLocation(programId1, "vertexColor");
-	vertexTexcoordLoc1 = glGetAttribLocation(programId1, "vertexTexcoord");
-	vertexNormalLoc1 = glGetAttribLocation(programId1, "vertexNormal");
-	modelMatrixLoc1 = glGetUniformLocation(programId1, "modelMatrix");
-	viewMatrixLoc1 = glGetUniformLocation(programId1, "viewMatrix");
-	projMatrixLoc1 = glGetUniformLocation(programId1, "projectionMatrix");
-
-	ambientLightLoc = glGetUniformLocation(programId1, "ambientLight");
-	diffuseLightLoc = glGetUniformLocation(programId1, "diffuseLight");
-	lightPositionLoc = glGetUniformLocation(programId1, "lightPosition");
-	materialALoc = glGetUniformLocation(programId1, "materialA");
-	materialDLoc = glGetUniformLocation(programId1, "materialD");
-	materialSLoc = glGetUniformLocation(programId1, "materialS");
-	exponentLoc = glGetUniformLocation(programId1, "exponent");
-	cameraLoc = glGetUniformLocation(programId1, "camera");
-
-	glUniform3fv(ambientLightLoc, 1, ambientLight);
-	glUniform3fv(diffuseLightLoc, 1, diffuseLight);
-	glUniform3fv(lightPositionLoc, 1, lightPosition);
-	glUniform3fv(materialALoc, 1, materialA);
-	glUniform3fv(materialDLoc, 1, materialD);
-	glUniform3fv(materialSLoc, 1, materialS);
-	glUniform1f(exponentLoc, exponent);
-
-	GLuint vShader2 = compileShader("shaders/earth.vsh", GL_VERTEX_SHADER);
-	if (!shaderCompiled(vShader2))
+	if (!createShaderProgram(&skyboxProgram, "shaders/skybox.vsh", "shaders/skybox.fsh"))
 		return false;
-	GLuint fShader2 = compileShader("shaders/earth.fsh", GL_FRAGMENT_SHADER);
-	if (!shaderCompiled(fShader2))
-		return false;
-	programId2 = glCreateProgram();
-	glAttachShader(programId2, vShader2);
-	glAttachShader(programId2, fShader2);
-	glLinkProgram(programId2);
-	glUseProgram(programId2);
-
-	vertexPosLoc2 = glGetAttribLocation(programId2, "vertexPosition");
-	vertexColLoc2 = glGetAttribLocation(programId2, "vertexColor");
-	vertexTexcoordLoc2 = glGetAttribLocation(programId2, "vertexTexcoord");
-	vertexNormalLoc2 = glGetAttribLocation(programId2, "vertexNormal");
-	modelMatrixLoc2 = glGetUniformLocation(programId2, "modelMatrix");
-	viewMatrixLoc2 = glGetUniformLocation(programId2, "viewMatrix");
-	projMatrixLoc2 = glGetUniformLocation(programId2, "projectionMatrix");
-
-	ambientLightLoc = glGetUniformLocation(programId2, "ambientLight");
-	diffuseLightLoc = glGetUniformLocation(programId2, "diffuseLight");
-	lightPositionLoc = glGetUniformLocation(programId2, "lightPosition");
-	materialALoc = glGetUniformLocation(programId2, "materialA");
-	materialDLoc = glGetUniformLocation(programId2, "materialD");
-	materialSLoc = glGetUniformLocation(programId2, "materialS");
-	exponentLoc = glGetUniformLocation(programId2, "exponent");
-	cameraLoc = glGetUniformLocation(programId2, "camera");
-
-	glUniform3fv(ambientLightLoc, 1, ambientLight);
-	glUniform3fv(diffuseLightLoc, 1, diffuseLight);
-	glUniform3fv(lightPositionLoc, 1, lightPosition);
-	glUniform3fv(materialALoc, 1, materialA);
-	glUniform3fv(materialDLoc, 1, materialD);
-	glUniform3fv(materialSLoc, 1, materialS);
-	glUniform1f(exponentLoc, exponent);
-
-	GLuint vShader3 = compileShader("shaders/skybox.vsh", GL_VERTEX_SHADER);
-	if (!shaderCompiled(vShader3))
-		return false;
-	GLuint fShader3 = compileShader("shaders/skybox.fsh", GL_FRAGMENT_SHADER);
-	if (!shaderCompiled(fShader3))
-		return false;
-	programId3 = glCreateProgram();
-	glAttachShader(programId3, vShader3);
-	glAttachShader(programId3, fShader3);
-	glLinkProgram(programId3);
-	glUseProgram(programId3);
-
-	vertexPosLoc3 = glGetAttribLocation(programId3, "vertexPosition");
-	vertexColLoc3 = glGetAttribLocation(programId3, "vertexColor");
-	vertexTexcoordLoc3 = glGetAttribLocation(programId3, "vertexTexcoord");
-	vertexNormalLoc3 = glGetAttribLocation(programId3, "vertexNormal");
-	modelMatrixLoc3 = glGetUniformLocation(programId3, "modelMatrix");
-	viewMatrixLoc3 = glGetUniformLocation(programId3, "viewMatrix");
-	projMatrixLoc3 = glGetUniformLocation(programId3, "projectionMatrix");
 
 	// Setup textures
 	setupTextures();
@@ -301,10 +212,22 @@ static void drawTerrain(int offsetX, int offsetZ)
 		{
 			mIdentity(&modelMatrix);
 			translate(&modelMatrix, (i + offsetX) * SIDE_LENGTH_X, 0, (j + offsetZ) * SIDE_LENGTH_Z);
-			glUniformMatrix4fv(modelMatrixLoc1, 1, GL_TRUE, modelMatrix.values);
+			glUniformMatrix4fv(terrainProgram.modelMatrixLoc, 1, GL_TRUE, modelMatrix.values);
 			terrain_draw(terrain);
 		}
 	}
+}
+
+static void useProgramWithCameraMatrices(const ShaderProgram *program)
+{
+	glUseProgram(program->id);
+	glUniformMatrix4fv(program->projMatrixLoc, 1, GL_TRUE, projectionMatrix.values);
+	mIdentity(&viewMatrix);
+	glUniform3f(program->cameraLoc, camera->position.x, camera->position.y, camera->position.z);
+	rotateX(&viewMatrix, -camera->pitch);
+	rotateY(&viewMatrix, -camera->yaw);
+	translate(&viewMatrix, -camera->position.x, -camera->position.y, -camera->position.z);
+	glUniformMatrix4fv(program->viewMatrixLoc, 1, GL_TRUE, viewMatrix.values);
 }
 
 static void display()
@@ -314,15 +237,8 @@ static void display()
 	calculateCameraPosition(camera);
 	move();
 
-	// ----------------- MVP to shader 1
-	glUseProgram(programId1);
-	glUniformMatrix4fv(projMatrixLoc1, 1, GL_TRUE, projectionMatrix.values);
-	mIdentity(&viewMatrix);
-	glUniform3f(cameraLoc, camera->position.x, camera->position.y, camera->position.z);
-	rotateX(&viewMatrix, -camera->pitch);
-	rotateY(&viewMatrix, -camera->yaw);
-	translate(&viewMatrix, -camera->position.x, -camera->position.y, -camera->position.z);
-	glUniformMatrix4fv(viewMatrixLoc1, 1, GL_TRUE, viewMatrix.values);
+	// ----------------- MVP to the terrain program
+	useProgramWithCameraMatrices(&terrainProgram);
 
 	// Draw an object to build third person view from it
 	mIdentity(&modelMatrix);
@@ -331,7 +247,7 @@ static void display()
 	translate(&modelMatrix, player->position.x, player->position.y, player->position.z);
 
 	Vertex normalInXZ = normalFromXZPosition(terrain, player->position.x, player->position.z);
-	glUniformMatrix4fv(modelMatrixLoc1, 1, GL_TRUE, modelMatrix.values);
+	glUniformMatrix4fv(terrainProgram.modelMatrixLoc, 1, GL_TRUE, modelMatrix.values);
 
 	rover.setPosition(player->position.x, player->position.y + 0.164, player->position.z);
 
@@ -343,7 +259,7 @@ static void display()
 
 	rover.rotateRoverPitch(finalRoverPitch);
 	rover.rotateRoverRoll(finalRoverRoll);
-	rover.draw(modelMatrixLoc1);
+	rover.draw(terrainProgram.modelMatrixLoc);
 
 	// Draw Terrain
 	mIdentity(&modelMatrix);
@@ -352,15 +268,8 @@ static void display()
 	glBindTexture(GL_TEXTURE_2D, textures[0]);
 	drawTerrain(player->position.x / SIDE_LENGTH_X, player->position.z / SIDE_LENGTH_Z);
 
-	// ---------------- MVP to shader 2 (earth)
-	glUseProgram(programId2);
-	glUniformMatrix4fv(projMatrixLoc2, 1, GL_TRUE, projectionMatrix.values);
-	mIdentity(&viewMatrix);
-	glUniform3f(cameraLoc, camera->position.x, camera->position.y, camera->position.z);
-	rotateX(&viewMatrix, -camera->pitch);
-	rotateY(&viewMatrix, -camera->yaw);
-	translate(&viewMatrix, -camera->position.x, -camera->position.y, -camera->position.z);
-	glUniformMatrix4fv(viewMatrixLoc2, 1, GL_TRUE, viewMatrix.values);
+	// ---------------- MVP to the earth program
+	useProgramWithCameraMatrices(&earthProgram);
 
 	// Draw Earth
 	mIdentity(&modelMatrix);
@@ -383,20 +292,13 @@ static void display()
 	static float angleSkybox = -45;
 
 	translate(&modelMatrix, camera->position.x + 50, 20, camera->position.z + 50);
-	rotateX(&modelMatrix, 23.5); // 23° It's the approximate inclination of the Earth
+	rotateX(&modelMatrix, 23.5); // 23Â° It's the approximate inclination of the Earth
 	rotateZ(&modelMatrix, -angleEarth);
-	glUniformMatrix4fv(modelMatrixLoc2, 1, GL_TRUE, modelMatrix.values);
+	glUniformMatrix4fv(earthProgram.modelMatrixLoc, 1, GL_TRUE, modelMatrix.values);
 	sphere_draw(earth);
 
-	// ------------ MVP to shader 3 (skybox)
-	glUseProgram(programId3);
-	glUniformMatrix4fv(projMatrixLoc3, 1, GL_TRUE, projectionMatrix.values);
-	mIdentity(&viewMatrix);
-	glUniform3f(cameraLoc, camera->position.x, camera->position.y, camera->position.z);
-	rotateX(&viewMatrix, -camera->pitch);
-	rotateY(&viewMatrix, -camera->yaw);
-	translate(&viewMatrix, -camera->position.x, -camera->position.y, -camera->position.z);
-	glUniformMatrix4fv(viewMatrixLoc3, 1, GL_TRUE, viewMatrix.values);
+	// ------------ MVP to the skybox program
+	useProgramWithCameraMatrices(&skyboxProgram);
 
 	mIdentity(&modelMatrix);
 	glActiveTexture(GL_TEXTURE0 + 4);
@@ -405,7 +307,7 @@ static void display()
 	translate(&modelMatrix, player->position.x, 0, player->position.z);
 	rotateX(&modelMatrix, 180);
 	rotateZ(&modelMatrix, -angleSkybox);
-	glUniformMatrix4fv(modelMatrixLoc3, 1, GL_TRUE, modelMatrix.values);
+	glUniformMatrix4fv(skyboxProgram.modelMatrixLoc, 1, GL_TRUE, modelMatrix.values);
 	sphere_draw(skybox);
 
 	angleEarth += 0.08;
@@ -430,8 +332,18 @@ static void reshapeFunc(int w, int h)
 	glViewport(0, 0, w, h);
 	float aspect = (float)w / h;
 	setPerspective(&projectionMatrix, 70, aspect, -0.05, -2000);
-	glUniformMatrix4fv(projMatrixLoc1, 1, GL_TRUE, projectionMatrix.values);
-	glUniformMatrix4fv(projMatrixLoc2, 1, GL_TRUE, projectionMatrix.values);
+
+	GLint previousProgram = 0;
+	glGetIntegerv(GL_CURRENT_PROGRAM, &previousProgram);
+
+	const ShaderProgram *programs[] = {&terrainProgram, &earthProgram, &skyboxProgram};
+	for (int i = 0; i < 3; i++)
+	{
+		glUseProgram(programs[i]->id);
+		glUniformMatrix4fv(programs[i]->projMatrixLoc, 1, GL_TRUE, projectionMatrix.values);
+	}
+
+	glUseProgram(previousProgram);
 }
 
 static void exitFunc(unsigned char key, int x, int y)
@@ -570,19 +482,19 @@ int main(int argc, char **argv)
 	}
 
 	terrain = terrain_create(NUM_VERTEX_X, NUM_VERTEX_Z, SIDE_LENGTH_X, SIDE_LENGTH_Z, {1, 1, 1});
-	terrain_bind(terrain, vertexPosLoc1, vertexColLoc1, vertexTexcoordLoc1, vertexNormalLoc1);
+	terrain_bind(terrain, terrainProgram.vertexPosLoc, terrainProgram.vertexColLoc, terrainProgram.vertexTexcoordLoc, terrainProgram.vertexNormalLoc);
 
 	earth = sphere_create(7, 40, 40, {1, 1, 1});
-	sphere_bind(earth, vertexPosLoc2, vertexColLoc2, vertexTexcoordLoc2, vertexNormalLoc2);
+	sphere_bind(earth, earthProgram.vertexPosLoc, earthProgram.vertexColLoc, earthProgram.vertexTexcoordLoc, earthProgram.vertexNormalLoc);
 
 	sphereRover = sphere_create(0.3, 40, 40, {1, 1, 1});
-	sphere_bind(sphereRover, vertexPosLoc2, vertexColLoc2, vertexTexcoordLoc2, vertexNormalLoc2);
+	sphere_bind(sphereRover, earthProgram.vertexPosLoc, earthProgram.vertexColLoc, earthProgram.vertexTexcoordLoc, earthProgram.vertexNormalLoc);
 
 	skybox = sphere_create(1500, 40, 40, {1.2, 1.2, 1.2});
-	sphere_bind(skybox, vertexPosLoc3, vertexColLoc3, vertexTexcoordLoc3, vertexNormalLoc3);
+	sphere_bind(skybox, skyboxProgram.vertexPosLoc, skyboxProgram.vertexColLoc, skyboxProgram.vertexTexcoordLoc, skyboxProgram.vertexNormalLoc);
 
 	rover.load();
-	rover.bind(programId1, vertexPosLoc1, vertexNormalLoc1, vertexColLoc1);
+	rover.bind(terrainProgram.id, terrainProgram.vertexPosLoc, terrainProgram.vertexNormalLoc, terrainProgram.vertexColLoc);
 
 	glClearColor(0, 0, 0, 1.0);
 	glutMainLoop();
