@@ -88,9 +88,25 @@ revision automatica de Copilot, aprobacion y merge automatico en cuanto CI esta 
 verde. Sin esas etiquetas, el PR espera a un humano. Los PRs del agente en la nube
 reciben esas etiquetas solos, porque el workflow detecta al autor.
 
-Escribe siempre `Closes #N` en el cuerpo del PR. GitHub no cierra el issue por su
-cuenta, porque solo lo hace cuando el merge ocurre en la default branch y aqui la
-default es `master`. De eso se encarga el workflow `close-linked-issues`.
+Escribe siempre `Closes #N` en el cuerpo del PR, aunque **el issue no se cerrara
+solo**. Sirve como referencia y es lo que lee el coordinador para cerrarlo.
+
+### Por que no hay cierre automatico de issues
+
+Hay dos motivos encadenados, ambos comprobados en este repositorio:
+
+1. GitHub solo cierra issues cuando el PR se mergea en la **default branch**, y
+   aqui la default es `master` mientras el desarrollo ocurre en `main`.
+2. Ningun workflow puede suplirlo. El merge lo ejecuta `github-actions[bot]` con
+   `GITHUB_TOKEN`, y **GitHub suprime los eventos originados por ese token** para
+   evitar recursion. Por eso ni `pull_request: closed` ni `push` llegan a
+   dispararse tras un auto-merge.
+
+Esa misma supresion es la razon de que el auto-etiquetado de los PRs de la nube se
+resuelva detectando al autor dentro del propio job, en lugar de reaccionar a un
+evento `labeled` posterior.
+
+Cerrar el issue es por tanto responsabilidad del coordinador, no de un workflow.
 
 Si una tarea resulta estar mal especificada o ser inviable, **para y dilo** en el
 issue con la etiqueta `needs-human`. No improvises un diseno alternativo.
