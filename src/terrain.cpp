@@ -11,6 +11,10 @@
 #define RESET 0xFFFFFFFF
 
 Vertex hueToRgb(float H);
+static int clampInt(int value, int minValue, int maxValue);
+static float wrapToTile(float value, float sideLength);
+static void sampleGrid(Terrain terrain, float x, float z, int *x0, int *x1, int *z0, int *z1, float *tx, float *tz);
+static Vertex safeNormalize(Vertex v);
 
 struct strTerrain
 {
@@ -232,47 +236,116 @@ Vertex hueToRgb(float H)
 	return rgb;
 }
 
-Vertex vertexFromXZPosition(Terrain terrain, float x, float z)
+static int clampInt(int value, int minValue, int maxValue)
+{
+	if (value < minValue)
+	{
+		return minValue;
+	}
+	if (value > maxValue)
+	{
+		return maxValue;
+	}
+	return value;
+}
+
+static float wrapToTile(float value, float sideLength)
+{
+	float wrapped = fmodf(value, sideLength);
+	if (wrapped < 0.0f)
+	{
+		wrapped += sideLength;
+	}
+	return wrapped;
+}
+
+static void sampleGrid(Terrain terrain, float x, float z, int *x0, int *x1, int *z0, int *z1, float *tx, float *tz)
 {
 	float dx = (float)terrain->sideLengthX / (float)(terrain->numVertexX - 1);
 	float dz = (float)terrain->sideLengthZ / (float)(terrain->numVertexZ - 1);
+	float localX = wrapToTile(x + terrain->sideLengthX / 2.0f, (float)terrain->sideLengthX);
+	float localZ = wrapToTile(z + terrain->sideLengthZ / 2.0f, (float)terrain->sideLengthZ);
+
+	float gridX = localX / dx;
+	float gridZ = localZ / dz;
+
+	int baseX = clampInt((int)floorf(gridX), 0, terrain->numVertexX - 1);
+	int baseZ = clampInt((int)floorf(gridZ), 0, terrain->numVertexZ - 1);
+	int nextX = clampInt(baseX + 1, 0, terrain->numVertexX - 1);
+	int nextZ = clampInt(baseZ + 1, 0, terrain->numVertexZ - 1);
+
+	*x0 = baseX;
+	*x1 = nextX;
+	*z0 = baseZ;
+	*z1 = nextZ;
+	*tx = fminf(fmaxf(gridX - (float)baseX, 0.0f), 1.0f);
+	*tz = fminf(fmaxf(gridZ - (float)baseZ, 0.0f), 1.0f);
+}
+
+static Vertex safeNormalize(Vertex v)
+{
+	float magnitude = sqrtf((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
+	if (!isfinite(magnitude) || magnitude <= 0.000001f)
+	{
+		return {0.0f, 1.0f, 0.0f};
+	}
+
+	Vertex normalized = {v.x / magnitude, v.y / magnitude, v.z / magnitude};
+	if (!isfinite(normalized.x) || !isfinite(normalized.y) || !isfinite(normalized.z))
+	{
+		return {0.0f, 1.0f, 0.0f};
+	}
+
+	return normalized;
+}
+
+Vertex vertexFromXZPosition(Terrain terrain, float x, float z)
+{
 	Vertex vertex = {x, 0, z};
+	int x0, x1, z0, z1;
+	float tx, tz;
 
-	float vX = x + terrain->sideLengthX / 2.0;
-	float vZ = z + terrain->sideLengthZ / 2.0;
+	sampleGrid(terrain, x, z, &x0, &x1, &z0, &z1, &tx, &tz);
 
-	int xoff = vX >= 0 ? vX / terrain->sideLengthX : vX / terrain->sideLengthX - 1;
-	int zoff = vZ >= 0 ? vZ / terrain->sideLengthZ : vZ / terrain->sideLengthZ - 1;
+	int index00 = z0 * terrain->numVertexX + x0;
+	int index10 = z0 * terrain->numVertexX + x1;
+	int index01 = z1 * terrain->numVertexX + x0;
+	int index11 = z1 * terrain->numVertexX + x1;
 
-	int i = ceil(((z + (terrain->sideLengthZ / 2)) - terrain->sideLengthZ * zoff) * (1 / dz));
-	int j = ceil(((x + (terrain->sideLengthX / 2)) - terrain->sideLengthX * xoff) * (1 / dx));
-	
-	int index = i * terrain->numVertexX + j;
-
-	// printf("%d, %d, %d\n", i, j, index);
-
-	vertex.y = terrain->vertices[index].y;
+	float y0 = terrain->vertices[index00].y + (terrain->vertices[index10].y - terrain->vertices[index00].y) * tx;
+	float y1 = terrain->vertices[index01].y + (terrain->vertices[index11].y - terrain->vertices[index01].y) * tx;
+	vertex.y = y0 + (y1 - y0) * tz;
 
 	return vertex;
 }
 
 Vertex normalFromXZPosition(Terrain terrain, float x, float z)
 {
-	float dx = (float)terrain->sideLengthX / (float)(terrain->numVertexX - 1);
-	float dz = (float)terrain->sideLengthZ / (float)(terrain->numVertexZ - 1);
+	int x0, x1, z0, z1;
+	float tx, tz;
 
-	float vX = x + terrain->sideLengthX / 2.0;
-	float vZ = z + terrain->sideLengthZ / 2.0;
+	sampleGrid(terrain, x, z, &x0, &x1, &z0, &z1, &tx, &tz);
 
-	int xoff = vX >= 0 ? vX / terrain->sideLengthX : vX / terrain->sideLengthX - 1;
-	int zoff = vZ >= 0 ? vZ / terrain->sideLengthZ : vZ / terrain->sideLengthZ - 1;
+	int index00 = z0 * terrain->numVertexX + x0;
+	int index10 = z0 * terrain->numVertexX + x1;
+	int index01 = z1 * terrain->numVertexX + x0;
+	int index11 = z1 * terrain->numVertexX + x1;
 
-	int i = ceil(((z + (terrain->sideLengthZ / 2)) - terrain->sideLengthZ * zoff) * (1 / dz));
-	int j = ceil(((x + (terrain->sideLengthX / 2)) - terrain->sideLengthX * xoff) * (1 / dx));
-	
-	int index = i * terrain->numVertexX + j;
+	Vertex n0 = {
+		terrain->normals[index00].x + (terrain->normals[index10].x - terrain->normals[index00].x) * tx,
+		terrain->normals[index00].y + (terrain->normals[index10].y - terrain->normals[index00].y) * tx,
+		terrain->normals[index00].z + (terrain->normals[index10].z - terrain->normals[index00].z) * tx
+	};
+	Vertex n1 = {
+		terrain->normals[index01].x + (terrain->normals[index11].x - terrain->normals[index01].x) * tx,
+		terrain->normals[index01].y + (terrain->normals[index11].y - terrain->normals[index01].y) * tx,
+		terrain->normals[index01].z + (terrain->normals[index11].z - terrain->normals[index01].z) * tx
+	};
+	Vertex n = {
+		n0.x + (n1.x - n0.x) * tz,
+		n0.y + (n1.y - n0.y) * tz,
+		n0.z + (n1.z - n0.z) * tz
+	};
 
-	// printf("%d, %d, %d\n", i, j, index);
-
-	return normalize(terrain->normals[index]);
+	return safeNormalize(n);
 }
