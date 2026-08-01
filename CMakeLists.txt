@@ -19,6 +19,8 @@ add_library(mat4 src/mat4.cpp)
 add_library(perlin src/perlin.cpp)
 add_library(sphere src/sphere.cpp)
 add_library(terrain src/terrain.cpp)
+add_library(player src/player.cpp)
+add_library(camera src/camera.cpp)
 
 # Graphics libraries differ per platform: Windows uses the DLLs vendored in lib/,
 # while other platforms resolve them through the system package manager.
@@ -32,7 +34,7 @@ else()
 endif()
 
 # Link Libs
-target_link_libraries(Main rover shape utils mat4 transforms terrain perlin sphere ${GRAPHICS_LIBS})
+target_link_libraries(Main rover shape utils mat4 transforms terrain perlin sphere camera player ${GRAPHICS_LIBS})
 target_link_libraries(ShapeTest rover shape utils mat4 transforms ${GRAPHICS_LIBS})
 
 # After build
