@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install graphics dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y freeglut3-dev libglew-dev libgl1-mesa-dev
+
+      - name: Configure
+        run: cmake -S . -B build
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Verify runtime assets are present
+        run: |
+          set -e
+          for dir in shaders meshes textures; do
+            if [ ! -d "$dir" ]; then
+              echo "Missing required asset directory: $dir"
+              exit 1
+            fi
+          done
+          test -x build/Main
+          echo "Build and assets OK"
