@@ -19,23 +19,11 @@
 static inline float toRadians(float deg) { return deg * M_PI / 180.0; }
 static inline float toDeg(float rad) { return rad * 180.0 / M_PI; }
 
-static inline float normalizeAngle(float deg)
-{
-	deg = fmodf(deg, 360.0);
-	if (deg < 0.0)
-		deg += 360.0;
-	return deg;
-}
-
 #define RESET 0xFFFFFFFF
 #define NUM_VERTEX_X 512
 #define NUM_VERTEX_Z 512
 #define SIDE_LENGTH_X 20
 #define SIDE_LENGTH_Z 20
-
-// distanceFromPlayer is negative, so the near limit is the greater value.
-#define CAMERA_DISTANCE_NEAR -0.5
-#define CAMERA_DISTANCE_FAR -10.0
 
 Sphere earth, sphereRover;
 Terrain terrain;
@@ -75,21 +63,8 @@ static Mat4 modelMatrix, viewMatrix, projectionMatrix;
 
 static GLuint texturesLocs[5];
 
-Vertex cameraPosition = {0, 1.5, 1.0};
-float cameraPitch = -30;
-float cameraYaw = 0.0;
-float cameraRoll;
-float cameraSpeed = 0.05;
-float distanceFromPlayer = -1.5;
-float angleAroundPlayer = 180;
-
-Vertex thirdPersonObj = {0, 1, 0};
-float objectYaw = 0.0; // object yaw
-float objectPitch = 0.0;
-float objectSpeed = 0.02;
-
-// Player player = createPlayer(thirdPersonObj, objectPitch, objectYaw, 0.0, objectSpeed);
-// Camera camera = createCamera(player, cameraPosition, cameraPitch, cameraYaw, cameraRoll, cameraSpeed, 0.08, -2.5, angleAroundPlayer);
+static Player player;
+static Camera camera;
 
 static GLuint ambientLightLoc, diffuseLightLoc, lightPositionLoc, materialALoc, materialDLoc, materialSLoc, exponentLoc, cameraLoc;
 
@@ -102,8 +77,6 @@ static float materialS[] = {0.7, 0.7, 0.7};
 static float exponent = 32;
 
 static GLuint textures[5];
-
-void calculateCameraPosition();
 
 static bool initTexture(const char *filename, GLuint textureId)
 {
@@ -268,41 +241,40 @@ static bool initShaders()
 
 static void move()
 {
-	float nextForwardXPosition = objectSpeed * -sin(toRadians(objectYaw));
-	float nextForwardZPosition = objectSpeed * -cos(toRadians(objectYaw));
+	Vertex forwardStep = playerForwardStep(player);
 
 	if (keys['w'])
 	{
+		float turn = 0;
 		if (keys['a'])
 		{
-			objectYaw += 2;
+			turn += 2;
 		}
 		if (keys['d'])
 		{
-			objectYaw -= 2;
+			turn -= 2;
 		}
-		objectYaw = normalizeAngle(objectYaw);
+		playerTurn(player, turn);
 		rover.rotateWheels(1);
-		rover.setYawRotation(objectYaw);
-		thirdPersonObj.x -= nextForwardXPosition;
-		thirdPersonObj.z -= nextForwardZPosition;
+		rover.setYawRotation(player->yaw);
+		playerMoveForward(player, forwardStep);
 	}
 
 	if (keys['s'])
 	{
+		float turn = 0;
 		if (keys['a'])
 		{
-			objectYaw -= 2;
+			turn -= 2;
 		}
 		if (keys['d'])
 		{
-			objectYaw += 2;
+			turn += 2;
 		}
-		objectYaw = normalizeAngle(objectYaw);
+		playerTurn(player, turn);
 		rover.rotateWheels(0);
-		rover.setYawRotation(objectYaw);
-		thirdPersonObj.x += nextForwardXPosition;
-		thirdPersonObj.z += nextForwardZPosition;
+		rover.setYawRotation(player->yaw);
+		playerMoveBackward(player, forwardStep);
 	}
 
 	if (keys['a'])
@@ -318,7 +290,7 @@ static void move()
 		rover.resetTurnWheels();
 	}
 
-	cameraYaw = (objectYaw + angleAroundPlayer);
+	cameraFollowPlayerYaw(camera);
 }
 
 static void drawTerrain(int offsetX, int offsetZ)
@@ -339,35 +311,35 @@ static void display()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	calculateCameraPosition();
+	calculateCameraPosition(camera);
 	move();
 
 	// ----------------- MVP to shader 1
 	glUseProgram(programId1);
 	glUniformMatrix4fv(projMatrixLoc1, 1, GL_TRUE, projectionMatrix.values);
 	mIdentity(&viewMatrix);
-	glUniform3f(cameraLoc, cameraPosition.x, cameraPosition.y, cameraPosition.z);
-	rotateX(&viewMatrix, -cameraPitch);
-	rotateY(&viewMatrix, -cameraYaw);
-	translate(&viewMatrix, -cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
+	glUniform3f(cameraLoc, camera->position.x, camera->position.y, camera->position.z);
+	rotateX(&viewMatrix, -camera->pitch);
+	rotateY(&viewMatrix, -camera->yaw);
+	translate(&viewMatrix, -camera->position.x, -camera->position.y, -camera->position.z);
 	glUniformMatrix4fv(viewMatrixLoc1, 1, GL_TRUE, viewMatrix.values);
 
 	// Draw an object to build third person view from it
 	mIdentity(&modelMatrix);
 
-	thirdPersonObj.y = vertexFromXZPosition(terrain, thirdPersonObj.x, thirdPersonObj.z).y;
-	translate(&modelMatrix, thirdPersonObj.x, thirdPersonObj.y, thirdPersonObj.z);
+	player->position.y = vertexFromXZPosition(terrain, player->position.x, player->position.z).y;
+	translate(&modelMatrix, player->position.x, player->position.y, player->position.z);
 
-	Vertex normalInXZ = normalFromXZPosition(terrain, thirdPersonObj.x, thirdPersonObj.z);
+	Vertex normalInXZ = normalFromXZPosition(terrain, player->position.x, player->position.z);
 	glUniformMatrix4fv(modelMatrixLoc1, 1, GL_TRUE, modelMatrix.values);
 
-	rover.setPosition(thirdPersonObj.x, thirdPersonObj.y + 0.164, thirdPersonObj.z);
+	rover.setPosition(player->position.x, player->position.y + 0.164, player->position.z);
 
 	float roverPitch = toDeg(atan(normalInXZ.z / -normalInXZ.y));
 	float roverRoll = toDeg(atan(normalInXZ.x / -normalInXZ.y));
 
-	float finalRoverPitch = -sin(toRadians(objectYaw)) * roverRoll - cos(toRadians(objectYaw)) * roverPitch;
-	float finalRoverRoll = cos(toRadians(objectYaw)) * roverRoll - sin(toRadians(objectYaw)) * roverPitch;
+	float finalRoverPitch = -sin(toRadians(player->yaw)) * roverRoll - cos(toRadians(player->yaw)) * roverPitch;
+	float finalRoverRoll = cos(toRadians(player->yaw)) * roverRoll - sin(toRadians(player->yaw)) * roverPitch;
 
 	rover.rotateRoverPitch(finalRoverPitch);
 	rover.rotateRoverRoll(finalRoverRoll);
@@ -378,16 +350,16 @@ static void display()
 	glActiveTexture(GL_TEXTURE0 + 0);
 	glUniform1i(texturesLocs[0], 0);
 	glBindTexture(GL_TEXTURE_2D, textures[0]);
-	drawTerrain(thirdPersonObj.x / SIDE_LENGTH_X, thirdPersonObj.z / SIDE_LENGTH_Z);
+	drawTerrain(player->position.x / SIDE_LENGTH_X, player->position.z / SIDE_LENGTH_Z);
 
 	// ---------------- MVP to shader 2 (earth)
 	glUseProgram(programId2);
 	glUniformMatrix4fv(projMatrixLoc2, 1, GL_TRUE, projectionMatrix.values);
 	mIdentity(&viewMatrix);
-	glUniform3f(cameraLoc, cameraPosition.x, cameraPosition.y, cameraPosition.z);
-	rotateX(&viewMatrix, -cameraPitch);
-	rotateY(&viewMatrix, -cameraYaw);
-	translate(&viewMatrix, -cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
+	glUniform3f(cameraLoc, camera->position.x, camera->position.y, camera->position.z);
+	rotateX(&viewMatrix, -camera->pitch);
+	rotateY(&viewMatrix, -camera->yaw);
+	translate(&viewMatrix, -camera->position.x, -camera->position.y, -camera->position.z);
 	glUniformMatrix4fv(viewMatrixLoc2, 1, GL_TRUE, viewMatrix.values);
 
 	// Draw Earth
@@ -410,7 +382,7 @@ static void display()
 	static float angleEarth = -45;
 	static float angleSkybox = -45;
 
-	translate(&modelMatrix, cameraPosition.x + 50, 20, cameraPosition.z + 50);
+	translate(&modelMatrix, camera->position.x + 50, 20, camera->position.z + 50);
 	rotateX(&modelMatrix, 23.5); // 23° It's the approximate inclination of the Earth
 	rotateZ(&modelMatrix, -angleEarth);
 	glUniformMatrix4fv(modelMatrixLoc2, 1, GL_TRUE, modelMatrix.values);
@@ -420,17 +392,17 @@ static void display()
 	glUseProgram(programId3);
 	glUniformMatrix4fv(projMatrixLoc3, 1, GL_TRUE, projectionMatrix.values);
 	mIdentity(&viewMatrix);
-	glUniform3f(cameraLoc, cameraPosition.x, cameraPosition.y, cameraPosition.z);
-	rotateX(&viewMatrix, -cameraPitch);
-	rotateY(&viewMatrix, -cameraYaw);
-	translate(&viewMatrix, -cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
+	glUniform3f(cameraLoc, camera->position.x, camera->position.y, camera->position.z);
+	rotateX(&viewMatrix, -camera->pitch);
+	rotateY(&viewMatrix, -camera->yaw);
+	translate(&viewMatrix, -camera->position.x, -camera->position.y, -camera->position.z);
 	glUniformMatrix4fv(viewMatrixLoc3, 1, GL_TRUE, viewMatrix.values);
 
 	mIdentity(&modelMatrix);
 	glActiveTexture(GL_TEXTURE0 + 4);
 	glUniform1i(texturesLocs[4], 4);
 	glBindTexture(GL_TEXTURE_2D, textures[4]);
-	translate(&modelMatrix, thirdPersonObj.x, 0, thirdPersonObj.z);
+	translate(&modelMatrix, player->position.x, 0, player->position.z);
 	rotateX(&modelMatrix, 180);
 	rotateZ(&modelMatrix, -angleSkybox);
 	glUniformMatrix4fv(modelMatrixLoc3, 1, GL_TRUE, modelMatrix.values);
@@ -493,15 +465,11 @@ static void mouseMove(int x, int y)
 	{
 		float angleAroundPlayerChange = (nx - lastClickedCoord[0]) * 500;
 		// printf("Angle around  player decrement: %f\n", angleAroundPlayerChange);
-		angleAroundPlayer = normalizeAngle(angleAroundPlayer - angleAroundPlayerChange);
+		cameraOrbit(camera, -angleAroundPlayerChange);
 
 		float cameraPitchChange = (ny - lastClickedCoord[1]) * 100;
 		// printf("Camera pitch decrement: %f\n", cameraPitchChange);
-		cameraPitch += cameraPitchChange;
-		if (cameraPitch <= -90 || cameraPitch > -5)
-		{
-			cameraPitch -= cameraPitchChange;
-		}
+		cameraPitchBy(camera, cameraPitchChange);
 
 		lastClickedCoord[0] = nx;
 		lastClickedCoord[1] = ny;
@@ -540,37 +508,16 @@ void mouseFunction(int button, int state, int mx, int my)
 		break;
 
 	case FRONT_WHEEL:
-		distanceFromPlayer += 0.1;
-		if (distanceFromPlayer > CAMERA_DISTANCE_NEAR)
-		{
-			distanceFromPlayer = CAMERA_DISTANCE_NEAR;
-		}
+		cameraZoom(camera, 0.1);
 		break;
 
 	case BACK_WHEEL:
-		distanceFromPlayer -= 0.1;
-		if (distanceFromPlayer < CAMERA_DISTANCE_FAR)
-		{
-			distanceFromPlayer = CAMERA_DISTANCE_FAR;
-		}
+		cameraZoom(camera, -0.1);
 		break;
 
 	default:
 		break;
 	}
-}
-
-void calculateCameraPosition()
-{
-	float horizontalDistance = distanceFromPlayer * cos(toRadians(cameraPitch));
-	float verticalDistance = distanceFromPlayer * sin(toRadians(cameraPitch));
-
-	float theta = objectYaw + angleAroundPlayer;
-	float offsetX = horizontalDistance * sin(toRadians(theta));
-	float offsetZ = horizontalDistance * cos(toRadians(theta));
-	cameraPosition.x = thirdPersonObj.x - offsetX;
-	cameraPosition.z = thirdPersonObj.z - offsetZ;
-	cameraPosition.y = thirdPersonObj.y + verticalDistance;
 }
 
 int main(int argc, char **argv)
@@ -611,6 +558,17 @@ int main(int argc, char **argv)
 	}
 
 	// Init scene set up
+	Vertex playerStartPosition = {0, 1, 0};
+	Vertex cameraStartPosition = {0, 1.5, 1.0};
+	player = createPlayer(playerStartPosition, 0.0, 0.02);
+	camera = player == NULL ? NULL : createCamera(player, cameraStartPosition, -30, -1.5, 180);
+	if (camera == NULL)
+	{
+		fprintf(stderr, "Error: could not allocate the player and camera state\n");
+		destroyPlayer(player);
+		return EXIT_FAILURE;
+	}
+
 	terrain = terrain_create(NUM_VERTEX_X, NUM_VERTEX_Z, SIDE_LENGTH_X, SIDE_LENGTH_Z, {1, 1, 1});
 	terrain_bind(terrain, vertexPosLoc1, vertexColLoc1, vertexTexcoordLoc1, vertexNormalLoc1);
 
@@ -628,5 +586,8 @@ int main(int argc, char **argv)
 
 	glClearColor(0, 0, 0, 1.0);
 	glutMainLoop();
+
+	destroyCamera(camera);
+	destroyPlayer(player);
 	return 0;
 }
