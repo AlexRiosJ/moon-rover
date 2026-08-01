@@ -19,11 +19,23 @@
 static inline float toRadians(float deg) { return deg * M_PI / 180.0; }
 static inline float toDeg(float rad) { return rad * 180.0 / M_PI; }
 
+static inline float normalizeAngle(float deg)
+{
+	deg = fmodf(deg, 360.0);
+	if (deg < 0.0)
+		deg += 360.0;
+	return deg;
+}
+
 #define RESET 0xFFFFFFFF
 #define NUM_VERTEX_X 512
 #define NUM_VERTEX_Z 512
 #define SIDE_LENGTH_X 20
 #define SIDE_LENGTH_Z 20
+
+// distanceFromPlayer is negative, so the near limit is the greater value.
+#define CAMERA_DISTANCE_NEAR -0.5
+#define CAMERA_DISTANCE_FAR -10.0
 
 Sphere earth, sphereRover;
 Terrain terrain;
@@ -269,6 +281,7 @@ static void move()
 		{
 			objectYaw -= 2;
 		}
+		objectYaw = normalizeAngle(objectYaw);
 		rover.rotateWheels(1);
 		rover.setYawRotation(objectYaw);
 		thirdPersonObj.x -= nextForwardXPosition;
@@ -285,6 +298,7 @@ static void move()
 		{
 			objectYaw += 2;
 		}
+		objectYaw = normalizeAngle(objectYaw);
 		rover.rotateWheels(0);
 		rover.setYawRotation(objectYaw);
 		thirdPersonObj.x += nextForwardXPosition;
@@ -479,7 +493,7 @@ static void mouseMove(int x, int y)
 	{
 		float angleAroundPlayerChange = (nx - lastClickedCoord[0]) * 500;
 		// printf("Angle around  player decrement: %f\n", angleAroundPlayerChange);
-		angleAroundPlayer -= angleAroundPlayerChange;
+		angleAroundPlayer = normalizeAngle(angleAroundPlayer - angleAroundPlayerChange);
 
 		float cameraPitchChange = (ny - lastClickedCoord[1]) * 100;
 		// printf("Camera pitch decrement: %f\n", cameraPitchChange);
@@ -527,10 +541,18 @@ void mouseFunction(int button, int state, int mx, int my)
 
 	case FRONT_WHEEL:
 		distanceFromPlayer += 0.1;
+		if (distanceFromPlayer > CAMERA_DISTANCE_NEAR)
+		{
+			distanceFromPlayer = CAMERA_DISTANCE_NEAR;
+		}
 		break;
 
 	case BACK_WHEEL:
 		distanceFromPlayer -= 0.1;
+		if (distanceFromPlayer < CAMERA_DISTANCE_FAR)
+		{
+			distanceFromPlayer = CAMERA_DISTANCE_FAR;
+		}
 		break;
 
 	default:

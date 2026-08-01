@@ -224,7 +224,11 @@ void Rover::rotateWheels(int forward)
 	this->wheelAngle += 3.5 * direction;
 	if (this->wheelAngle >= 360.0)
 	{
-		this->wheelAngle = 0.0;
+		this->wheelAngle -= 360.0;
+	}
+	else if (this->wheelAngle < 0.0)
+	{
+		this->wheelAngle += 360.0;
 	}
 }
 
