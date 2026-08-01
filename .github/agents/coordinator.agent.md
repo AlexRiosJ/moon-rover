@@ -58,6 +58,22 @@ que el ciclo se cierre.
 6. **Cerrar el ciclo.** Un PR con las etiquetas `ai-generated` y `auto-merge`
    dispara la revision y el merge automaticos. Comprueba que ocurrio.
 
+7. **Cerrar el issue a mano.** Esto es tuyo y no lo hace nadie mas. Cuando un PR
+   se mergea en `main`, su issue **se queda abierto**: GitHub solo los cierra al
+   mergear en la default branch, y ningun workflow puede suplirlo porque el merge
+   lo ejecuta `github-actions[bot]` y GitHub suprime los eventos originados por
+   `GITHUB_TOKEN`.
+
+   Repasa los PRs mergeados recientemente, busca el `Closes #N` de su cuerpo y
+   cierra esos issues citando el PR:
+   ```bash
+   gh pr list --repo AlexRiosJ/moon-rover --state merged --limit 10
+   gh issue close <N> --repo AlexRiosJ/moon-rover \
+     --comment "Resuelto en el PR #<PR>, mergeado en main."
+   ```
+   Hazlo antes de repartir trabajo nuevo, para que el backlog refleje la realidad
+   y no vuelvas a asignar algo ya hecho.
+
 ## Como delegar
 
 Cuando lances una sesion hija, dale contexto completo: el numero de issue, los
