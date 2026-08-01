@@ -1,61 +1,86 @@
 name: Close linked issues
 
 # GitHub solo cierra issues automaticamente cuando el PR se mergea en la default
-# branch. En este repositorio la default es `master`, que esta congelada, mientras
-# que el desarrollo ocurre en `main`. Por eso los `Closes #N` de nuestros PRs no
-# surtian efecto y los issues se quedaban abiertos tras completarse.
+# branch. Aqui la default es `master`, que esta congelada, mientras el desarrollo
+# ocurre en `main`, asi que los `Closes #N` de nuestros PRs no surten efecto.
 #
-# Este workflow replica ese comportamiento para los merges en `main`.
+# Este workflow lo suple. Se dispara con `push` sobre `main` en lugar de con
+# `pull_request: closed` porque ese evento no llega a ejecutarse: al mergear
+# borramos la rama (`--delete-branch`), y GitHub necesita la rama head para
+# resolver la definicion del workflow del evento `closed`.
+#
+# Tampoco basta con leer el mensaje del commit: el squash conserva el mensaje del
+# commit original, no el cuerpo del PR donde escribimos `Closes #N`. Por eso se
+# extrae el numero de PR del sufijo `(#N)` que GitHub anade al hacer squash y se
+# consulta el cuerpo por API.
 
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches: [main]
 
 permissions:
   issues: write
+  pull-requests: read
   contents: read
 
 jobs:
   close:
-    name: close issues referenced by the merged PR
+    name: close issues referenced by merged pull requests
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true
 
     steps:
       - name: Close referenced issues
         env:
           GH_TOKEN: ${{ github.token }}
-          PR: ${{ github.event.pull_request.number }}
-          # El cuerpo del PR se pasa por entorno, nunca interpolado en el script,
-          # para que su contenido no pueda inyectar comandos.
-          BODY: ${{ github.event.pull_request.body }}
+          # Por entorno, nunca interpolado en el script, para que el contenido de
+          # los mensajes no pueda inyectar comandos.
+          MESSAGES: ${{ toJSON(github.event.commits.*.message) }}
         run: |
           set -euo pipefail
 
-          numbers=$(printf '%s' "${BODY:-}" \
-            | grep -oiE '(close[sd]?|fix(e[sd])?|resolve[sd]?)[[:space:]]*:?[[:space:]]*#[0-9]+' \
+          prs=$(printf '%s' "${MESSAGES:-}" \
+            | grep -oE '\(#[0-9]+\)' \
             | grep -oE '[0-9]+' \
             | sort -u || true)
 
-          if [ -z "$numbers" ]; then
-            echo "No closing keywords found in the pull request body"
+          if [ -z "$prs" ]; then
+            echo "No pull request references found in the pushed commits"
             exit 0
           fi
 
-          for n in $numbers; do
-            state=$(gh issue view "$n" --repo "$GITHUB_REPOSITORY" --json state --jq .state 2>/dev/null || echo MISSING)
-            case "$state" in
-              OPEN)
-                gh issue close "$n" --repo "$GITHUB_REPOSITORY" \
-                  --comment "Resuelto en el PR #${PR}, mergeado en \`main\`."
-                echo "Closed #$n"
-                ;;
-              MISSING)
-                echo "#$n does not exist or is not an issue; skipping"
-                ;;
-              *)
-                echo "#$n is already $state; skipping"
-                ;;
-            esac
+          for pr in $prs; do
+            body=$(gh pr view "$pr" --repo "$GITHUB_REPOSITORY" --json body,state \
+              --jq 'select(.state == "MERGED") | .body' 2>/dev/null || true)
+
+            if [ -z "$body" ]; then
+              echo "#$pr is not a merged pull request; skipping"
+              continue
+            fi
+
+            issues=$(printf '%s' "$body" \
+              | grep -oiE '(close[sd]?|fix(e[sd])?|resolve[sd]?)[[:space:]]*:?[[:space:]]*#[0-9]+' \
+              | grep -oE '[0-9]+' \
+              | sort -u || true)
+
+            if [ -z "$issues" ]; then
+              echo "PR #$pr has no closing keywords in its body"
+              continue
+            fi
+
+            for n in $issues; do
+              state=$(gh issue view "$n" --repo "$GITHUB_REPOSITORY" --json state --jq .state 2>/dev/null || echo MISSING)
+              case "$state" in
+                OPEN)
+                  gh issue close "$n" --repo "$GITHUB_REPOSITORY" \
+                    --comment "Resuelto en el PR #${pr}, mergeado en \`main\`."
+                  echo "Closed #$n via PR #$pr"
+                  ;;
+                MISSING)
+                  echo "#$n does not exist or is not an issue; skipping"
+                  ;;
+                *)
+                  echo "#$n is already $state; skipping"
+                  ;;
+              esac
+            done
           done
