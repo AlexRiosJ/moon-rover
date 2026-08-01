@@ -9,6 +9,7 @@
 #include "camera.h"
 #include "player.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <time.h>
 #ifndef M_PI
@@ -92,12 +93,14 @@ static GLuint textures[5];
 
 void calculateCameraPosition();
 
-static void initTexture(const char *filename, GLuint textureId)
+static bool initTexture(const char *filename, GLuint textureId)
 {
 	unsigned char *data;
 	unsigned int width, height;
+	if (!loadBMP(filename, &data, &width, &height))
+		return false;
+
 	glBindTexture(GL_TEXTURE_2D, textureId);
-	loadBMP(filename, &data, &width, &height);
 	// printf("%d, %d\n", width, height);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, data);
 	glGenerateMipmap(GL_TEXTURE_2D);
@@ -110,16 +113,21 @@ static void initTexture(const char *filename, GLuint textureId)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+	free(data);
+	return true;
 }
 
-static void initTextures()
+static bool initTextures()
 {
 	glGenTextures(5, textures);
-	initTexture("textures/moon-sand.bmp", textures[0]);
-	initTexture("textures/earth.bmp", textures[1]);
-	initTexture("textures/earth-clouds.bmp", textures[2]);
-	initTexture("textures/earth-specular.bmp", textures[3]);
-	initTexture("textures/skybox.bmp", textures[4]);
+	bool loaded = true;
+	loaded &= initTexture("textures/moon-sand.bmp", textures[0]);
+	loaded &= initTexture("textures/earth.bmp", textures[1]);
+	loaded &= initTexture("textures/earth-clouds.bmp", textures[2]);
+	loaded &= initTexture("textures/earth-specular.bmp", textures[3]);
+	loaded &= initTexture("textures/skybox.bmp", textures[4]);
+	return loaded;
 }
 
 static void setupTextures()
@@ -140,14 +148,14 @@ static void setupTextures()
 	glUniform1i(texturesLocs[4], textures[4]);
 }
 
-static void initShaders()
+static bool initShaders()
 {
 	GLuint vShader = compileShader("shaders/projection.vsh", GL_VERTEX_SHADER);
 	if (!shaderCompiled(vShader))
-		return;
+		return false;
 	GLuint fShader = compileShader("shaders/color.fsh", GL_FRAGMENT_SHADER);
 	if (!shaderCompiled(fShader))
-		return;
+		return false;
 
 	programId1 = glCreateProgram();
 	glAttachShader(programId1, vShader);
@@ -182,10 +190,10 @@ static void initShaders()
 
 	GLuint vShader2 = compileShader("shaders/earth.vsh", GL_VERTEX_SHADER);
 	if (!shaderCompiled(vShader2))
-		return;
+		return false;
 	GLuint fShader2 = compileShader("shaders/earth.fsh", GL_FRAGMENT_SHADER);
 	if (!shaderCompiled(fShader2))
-		return;
+		return false;
 	programId2 = glCreateProgram();
 	glAttachShader(programId2, vShader2);
 	glAttachShader(programId2, fShader2);
@@ -219,10 +227,10 @@ static void initShaders()
 
 	GLuint vShader3 = compileShader("shaders/skybox.vsh", GL_VERTEX_SHADER);
 	if (!shaderCompiled(vShader3))
-		return;
+		return false;
 	GLuint fShader3 = compileShader("shaders/skybox.fsh", GL_FRAGMENT_SHADER);
 	if (!shaderCompiled(fShader3))
-		return;
+		return false;
 	programId3 = glCreateProgram();
 	glAttachShader(programId3, vShader3);
 	glAttachShader(programId3, fShader3);
@@ -243,6 +251,7 @@ static void initShaders()
 	glEnable(GL_DEPTH_TEST);
 	//	glEnable(GL_CULL_FACE);
 	//	glFrontFace(GL_CW);
+	return true;
 }
 
 static void move()
@@ -571,8 +580,13 @@ int main(int argc, char **argv)
 
 	// Init
 	glewInit();
-	initTextures();
-	initShaders();
+	if (!initTextures())
+		fprintf(stderr, "Warning: some textures were not loaded, the scene will be rendered without them\n");
+	if (!initShaders())
+	{
+		fprintf(stderr, "Error: shaders could not be initialized. Launch the executable from the repository root so that asset paths resolve.\n");
+		return EXIT_FAILURE;
+	}
 
 	// Init scene set up
 	terrain = terrain_create(NUM_VERTEX_X, NUM_VERTEX_Z, SIDE_LENGTH_X, SIDE_LENGTH_Z, {1, 1, 1});

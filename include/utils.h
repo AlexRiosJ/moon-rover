@@ -23,9 +23,13 @@ typedef struct Triangle
     Vertex pointC;
 } Triangle;
 
+// Returns a heap-allocated copy of the shader source, or NULL if the file cannot be read.
+// The caller owns the returned buffer.
 const char *loadShader(const char *filename);
+// Returns 0 when the shader source could not be loaded.
 GLuint compileShader(const char *filename, GLuint shaderType);
 bool shaderCompiled(GLuint shaderId);
+// On success *pdata owns a heap-allocated pixel buffer; on failure *pdata is NULL.
 bool loadBMP(const char *filename, unsigned char **pdata, unsigned int *width, unsigned int *height);
 void processArrayBuffer(GLuint bufferId, void *array, int arraySize, GLuint loc, int size, int type);
 void processIndexBuffer(GLuint bufferId, void *array, int arraySize, int restartIndex);

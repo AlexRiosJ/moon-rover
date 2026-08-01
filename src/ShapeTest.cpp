@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "transforms.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <time.h>
 #include <shapes/Rover.hpp>
@@ -27,14 +28,14 @@ static float exponent = 16;
 
 static float rz = -1.0;
 
-static void initShaders()
+static bool initShaders()
 {
 	GLuint vShader = compileShader("shaders/Gouraud.vsh", GL_VERTEX_SHADER);
 	if (!shaderCompiled(vShader))
-		return;
+		return false;
 	GLuint fShader = compileShader("shaders/modelColor.fsh", GL_FRAGMENT_SHADER);
 	if (!shaderCompiled(fShader))
-		return;
+		return false;
 	programId1 = glCreateProgram();
 	printf("Program %d created\n", programId1);
 	glAttachShader(programId1, vShader);
@@ -68,6 +69,7 @@ static void initShaders()
 	glUniform3fv(materialDLoc, 1, materialD);
 	glUniform3fv(materialSLoc, 1, materialS);
 	glUniform1f(exponentLoc, exponent);    
+	return true;
 }
 
 static void reshapeFunc(int w, int h)
@@ -127,7 +129,11 @@ int main(int argc, char **argv)
 	glewInit();
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
-	initShaders();
+	if (!initShaders())
+	{
+		fprintf(stderr, "Error: shaders could not be initialized. Launch the executable from the repository root so that asset paths resolve.\n");
+		return EXIT_FAILURE;
+	}
 
 	r.load();
 	r.bind(programId1, vertexPositionLoc, vertexNormalLoc, vertexColorLoc);
