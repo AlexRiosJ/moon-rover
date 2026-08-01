@@ -85,7 +85,12 @@ Verificar que el proyecto compila antes de abrir un PR no es opcional.
 
 Los PRs contra `main` con las etiquetas `ai-generated` y `auto-merge` pasan por
 revision automatica de Copilot, aprobacion y merge automatico en cuanto CI esta en
-verde. Sin esas etiquetas, el PR espera a un humano.
+verde. Sin esas etiquetas, el PR espera a un humano. Los PRs del agente en la nube
+reciben esas etiquetas solos, porque el workflow detecta al autor.
+
+Escribe siempre `Closes #N` en el cuerpo del PR. GitHub no cierra el issue por su
+cuenta, porque solo lo hace cuando el merge ocurre en la default branch y aqui la
+default es `master`. De eso se encarga el workflow `close-linked-issues`.
 
 Si una tarea resulta estar mal especificada o ser inviable, **para y dilo** en el
 issue con la etiqueta `needs-human`. No improvises un diseno alternativo.

@@ -1,0 +1,61 @@
+name: Close linked issues
+
+# GitHub solo cierra issues automaticamente cuando el PR se mergea en la default
+# branch. En este repositorio la default es `master`, que esta congelada, mientras
+# que el desarrollo ocurre en `main`. Por eso los `Closes #N` de nuestros PRs no
+# surtian efecto y los issues se quedaban abiertos tras completarse.
+#
+# Este workflow replica ese comportamiento para los merges en `main`.
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  close:
+    name: close issues referenced by the merged PR
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+
+    steps:
+      - name: Close referenced issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          # El cuerpo del PR se pasa por entorno, nunca interpolado en el script,
+          # para que su contenido no pueda inyectar comandos.
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+
+          numbers=$(printf '%s' "${BODY:-}" \
+            | grep -oiE '(close[sd]?|fix(e[sd])?|resolve[sd]?)[[:space:]]*:?[[:space:]]*#[0-9]+' \
+            | grep -oE '[0-9]+' \
+            | sort -u || true)
+
+          if [ -z "$numbers" ]; then
+            echo "No closing keywords found in the pull request body"
+            exit 0
+          fi
+
+          for n in $numbers; do
+            state=$(gh issue view "$n" --repo "$GITHUB_REPOSITORY" --json state --jq .state 2>/dev/null || echo MISSING)
+            case "$state" in
+              OPEN)
+                gh issue close "$n" --repo "$GITHUB_REPOSITORY" \
+                  --comment "Resuelto en el PR #${PR}, mergeado en \`main\`."
+                echo "Closed #$n"
+                ;;
+              MISSING)
+                echo "#$n does not exist or is not an issue; skipping"
+                ;;
+              *)
+                echo "#$n is already $state; skipping"
+                ;;
+            esac
+          done
