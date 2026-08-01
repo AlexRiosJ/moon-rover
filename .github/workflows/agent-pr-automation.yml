@@ -1,0 +1,72 @@
+name: Agent PR automation
+
+# Cierra el ciclo de los PRs generados por agentes contra `main`:
+# pide revision a Copilot, aprueba y deja el merge automatico armado.
+# El merge real solo ocurre cuando CI pasa, porque `main` exige el check `build`.
+#
+# Un PR solo entra aqui si lleva la etiqueta `ai-generated`. Cualquier PR sin esa
+# etiqueta sigue el flujo humano de siempre.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled, ready_for_review]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: agent-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  automate:
+    name: review and queue merge
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.pull_request.draft == false &&
+      contains(github.event.pull_request.labels.*.name, 'ai-generated') &&
+      !contains(github.event.pull_request.labels.*.name, 'needs-human')
+
+    steps:
+      - name: Request Copilot code review
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/pulls/${PR}/requested_reviewers" \
+            -f 'reviewers[]=copilot-pull-request-reviewer[bot]' \
+            && echo "Copilot review requested" \
+            || echo "Could not request Copilot review; continuing"
+
+      # Copilot code review solo comenta, nunca aprueba. La aprobacion formal la
+      # emite github-actions[bot], que es una identidad distinta al autor del PR
+      # (GitHub prohibe que un autor apruebe su propio PR).
+      - name: Approve pull request
+        if: contains(github.event.pull_request.labels.*.name, 'auto-merge')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          approved=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/reviews" \
+            --jq '[.[] | select(.user.login == "github-actions[bot]" and .state == "APPROVED")] | length')
+          if [ "$approved" -gt 0 ]; then
+            echo "Already approved by github-actions[bot]"
+          else
+            gh pr review "$PR" --repo "$GITHUB_REPOSITORY" --approve \
+              --body "Aprobado automaticamente. El merge queda condicionado a que CI pase."
+          fi
+
+      - name: Enable auto-merge
+        if: contains(github.event.pull_request.labels.*.name, 'auto-merge')
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --auto --squash --delete-branch \
+            && echo "Auto-merge armed" \
+            || echo "Could not enable auto-merge; branch protection may be missing on main"
